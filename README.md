@@ -1,0 +1,36 @@
+# CODM Hand Cam Agent
+
+AI-assisted hand cam monitoring for Call of Duty: Mobile lobbies, run through Discord. Full spec: [CLAUDE.md](CLAUDE.md).
+
+Discord bots can't watch voice-channel video, so players open a one-time cam link (sent by the bot) on a second device.
+That page streams to the self-hosted LiveKit server, where admins watch and the vision worker analyses the feed.
+
+## Setup
+
+1. **Server:** Ubuntu with Docker, Node 20.12+, MySQL 8, Nginx. Open UDP 50000–60000 and TCP 7881 for LiveKit media.
+2. `cp .env.example .env` and fill it in. `npm ci`, then `npm run db:migrate`.
+3. `cd deploy && docker compose --env-file ../.env up -d` (LiveKit + Redis).
+4. Nginx: copy `deploy/nginx/handcam.conf`, replace the domains, run certbot.
+5. **Discord app** ([Developer Portal](https://discord.com/developers/applications)):
+   - Bot tab: copy the token into `DISCORD_TOKEN`. Application ID → `DISCORD_CLIENT_ID`.
+   - Invite with scopes `bot` + `applications.commands` and permissions View Channels, Send Messages, Embed Links.
+   - Role-based lobbies (`/handcam lobby start role:`) need **Server Members Intent** turned on, plus `DISCORD_MEMBERS_INTENT=true`.
+     Voice-channel lobbies work without it.
+6. `npm run bot:deploy` registers `/handcam` (set `DISCORD_DEV_GUILD_ID` to register to one server instantly while testing).
+7. `pm2 start deploy/ecosystem.config.cjs`
+8. In Discord: `/handcam config alert_channel:#handcam-alerts`.
+
+## Using it
+
+| Command | Who | |
+|---|---|---|
+| `/handcam start @player [match]` | Admin | DMs the player a cam link (or a fresh one if they never opened it) |
+| `/handcam lobby start [channel/role] [match]` | Admin | Same for everyone in a voice channel (default: the one you're in) or role |
+| `/handcam join` | Player | Gets your cam link privately; works when DMs are closed. Self-start without an admin can be turned off with `self_join` |
+| `/handcam status [@player]` | Anyone | ✅ OK / ⚠️ Warning / ❌ Violation, time live, data used |
+| `/handcam stop @player`, `/handcam lobby stop` | Admin | Ends sessions and disconnects the cam |
+| `/handcam config` | Admin | Alert channel, admin role, self join, rule thresholds. No options shows current settings |
+
+Admins are members with **Manage Server**, or the role set with `/handcam config admin_role:`.
+
+Without the bot: `npm run cli -- new --guild <id> --user <id>` prints a cam link, `npm run cli -- watch --session <id>` a 1-hour watch link.

@@ -7,6 +7,7 @@ const schema = z.object({
   LIVEKIT_API_KEY: z.string().min(1),
   LIVEKIT_API_SECRET: z.string().min(1),
   MYSQL_URL: z.string().min(1),
+  REDIS_URL: z.string().optional(),
   DEFAULT_CAM_RES: z.enum(['360p', '480p', '720p']).default('480p'),
   CAM_LINK_TTL_MIN: z.coerce.number().int().positive().default(30),
 });

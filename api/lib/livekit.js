@@ -1,4 +1,4 @@
-import { AccessToken, TrackSource } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient, TrackSource } from 'livekit-server-sdk';
 import { randomBytes } from 'node:crypto';
 import { config } from '../config.js';
 
@@ -38,4 +38,19 @@ export function watchToken(sessionId, viewer = 'admin') {
     hidden: true,
   });
   return at.toJwt();
+}
+
+const rooms = new RoomServiceClient(
+  config.LIVEKIT_URL.replace(/^ws/, 'http'),
+  config.LIVEKIT_API_KEY,
+  config.LIVEKIT_API_SECRET,
+);
+
+// Disconnects everyone in the session's room. A missing room is fine (cam never connected).
+export async function closeRoom(sessionId) {
+  try {
+    await rooms.deleteRoom(roomName(sessionId));
+  } catch (err) {
+    if (err?.status !== 404) console.error(`closeRoom ${sessionId} failed:`, err.message);
+  }
 }

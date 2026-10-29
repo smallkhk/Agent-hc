@@ -2,6 +2,8 @@
 import { pool } from '../db.js';
 import { config } from '../config.js';
 import { hashMatches, randomToken, sha256 } from './tokens.js';
+import { closeRoom } from './livekit.js';
+import { publish } from './bus.js';
 
 export class CamLinkError extends Error {
   constructor(code) {
@@ -19,8 +21,10 @@ export async function ensureGuild(discordGuildId) {
   return res.insertId;
 }
 
-// Creates a pending session and returns its one-time cam link.
 // The token lives in the URL fragment so it never reaches server or proxy logs.
+const camUrl = (token) => `${config.PUBLIC_URL}/cam.html#t=${token}`;
+
+// Creates a pending session and returns its one-time cam link.
 export async function createSession({ discordGuildId, discordUserId, matchLabel = null }) {
   const guildId = await ensureGuild(discordGuildId);
   const token = randomToken();
@@ -29,8 +33,85 @@ export async function createSession({ discordGuildId, discordUserId, matchLabel 
      VALUES (?, ?, ?, ?, UTC_TIMESTAMP(3) + INTERVAL ? MINUTE)`,
     [guildId, discordUserId, matchLabel, sha256(token), config.CAM_LINK_TTL_MIN],
   );
-  return { sessionId: res.insertId, camUrl: `${config.PUBLIC_URL}/cam.html#t=${token}` };
+  return { sessionId: res.insertId, camUrl: camUrl(token) };
 }
+
+// New link for a session whose link was never opened (lost DM, expired link).
+// Returns null once a device has claimed the session.
+export async function reissueCamLink(sessionId) {
+  const token = randomToken();
+  const [res] = await pool.query(
+    `UPDATE sessions SET token_hash = ?, token_expires_at = UTC_TIMESTAMP(3) + INTERVAL ? MINUTE
+     WHERE id = ? AND token_used_at IS NULL AND status = 'pending'`,
+    [sha256(token), config.CAM_LINK_TTL_MIN, sessionId],
+  );
+  return res.affectedRows ? camUrl(token) : null;
+}
+
+const SESSION_COLUMNS = `s.id, s.status, s.match_label AS matchLabel, s.discord_user_id AS discordUserId,
+  g.discord_guild_id AS discordGuildId, s.token_used_at IS NOT NULL AS linkOpened,
+  s.started_at AS startedAt, s.ended_at AS endedAt, s.uptime_sec AS uptimeSec,
+  s.data_bytes AS dataBytes`;
+
+// Latest session for a player that has not ended (pending, live or stale).
+export async function activeSession(discordGuildId, discordUserId) {
+  const [rows] = await pool.query(
+    `SELECT ${SESSION_COLUMNS} FROM sessions s JOIN guilds g ON g.id = s.guild_id
+     WHERE g.discord_guild_id = ? AND s.discord_user_id = ? AND s.status <> 'ended'
+     ORDER BY s.id DESC LIMIT 1`,
+    [discordGuildId, discordUserId],
+  );
+  return rows[0] ?? null;
+}
+
+export async function activeSessionsByMatch(discordGuildId, matchLabel) {
+  const [rows] = await pool.query(
+    `SELECT ${SESSION_COLUMNS} FROM sessions s JOIN guilds g ON g.id = s.guild_id
+     WHERE g.discord_guild_id = ? AND s.match_label = ? AND s.status <> 'ended'`,
+    [discordGuildId, matchLabel],
+  );
+  return rows;
+}
+
+// Unresolved warnings/violations decide the ✅ / ⚠️ / ❌ badge.
+export async function sessionEventCounts(sessionId) {
+  const [rows] = await pool.query(
+    `SELECT
+       SUM(severity = 'warning') AS warnings,
+       SUM(severity = 'violation') AS violations,
+       SUM(severity = 'warning' AND admin_action IS NULL) AS openWarnings,
+       SUM(severity = 'violation' AND admin_action IS NULL) AS openViolations
+     FROM events WHERE session_id = ?`,
+    [sessionId],
+  );
+  const r = rows[0];
+  return {
+    warnings: Number(r.warnings ?? 0),
+    violations: Number(r.violations ?? 0),
+    openWarnings: Number(r.openWarnings ?? 0),
+    openViolations: Number(r.openViolations ?? 0),
+  };
+}
+
+// Ends the session and closes its LiveKit room, which disconnects the cam.
+export async function endSession(session) {
+  const [res] = await pool.query(
+    `UPDATE sessions SET status = 'ended', ended_at = UTC_TIMESTAMP(3)
+     WHERE id = ? AND status <> 'ended'`,
+    [session.id],
+  );
+  if (!res.affectedRows) return false;
+  await closeRoom(session.id);
+  await publish({ type: 'ended', ...pick(session) });
+  return true;
+}
+
+const pick = (s) => ({
+  sessionId: s.id,
+  discordGuildId: s.discordGuildId,
+  discordUserId: s.discordUserId,
+  matchLabel: s.matchLabel,
+});
 
 // First redeem binds the link to this device (returns a new device secret for a cookie).
 // Later redeems (reloads, reconnects) must present that device secret.
@@ -39,9 +120,11 @@ export async function redeemCamLink(token, deviceSecret) {
   try {
     await conn.beginTransaction();
     const [rows] = await conn.query(
-      `SELECT id, status, match_label, token_used_at, device_hash,
-              token_expires_at < UTC_TIMESTAMP(3) AS expired
-       FROM sessions WHERE token_hash = ? FOR UPDATE`,
+      `SELECT s.id, s.status, s.match_label AS matchLabel, s.discord_user_id AS discordUserId,
+              g.discord_guild_id AS discordGuildId, s.token_used_at, s.device_hash, s.started_at,
+              s.token_expires_at < UTC_TIMESTAMP(3) AS expired
+       FROM sessions s JOIN guilds g ON g.id = s.guild_id
+       WHERE s.token_hash = ? FOR UPDATE`,
       [sha256(token)],
     );
     const s = rows[0];
@@ -67,7 +150,8 @@ export async function redeemCamLink(token, deviceSecret) {
       [s.id],
     );
     await conn.commit();
-    return { sessionId: s.id, matchLabel: s.match_label, newDeviceSecret };
+    if (!s.started_at) await publish({ type: 'live', ...pick(s) });
+    return { sessionId: s.id, matchLabel: s.matchLabel, newDeviceSecret };
   } catch (err) {
     await conn.rollback();
     throw err;
