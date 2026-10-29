@@ -1,0 +1,26 @@
+# LiveKit + Redis. Run from /deploy: docker compose --env-file ../.env up -d
+# Host networking so LiveKit can use the UDP media port range directly.
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--bind", "127.0.0.1", "--port", "6379", "--appendonly", "yes"]
+    network_mode: host
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  livekit:
+    image: livekit/livekit-server:v1.8
+    command: ["--config", "/etc/livekit.yaml"]
+    network_mode: host
+    environment:
+      # "key: secret" — read from .env, never committed
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  redis-data:
