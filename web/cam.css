@@ -1,0 +1,43 @@
+:root {
+  --bg: #0b0d10;
+  --fg: #eef1f4;
+  --muted: #9aa4ae;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --panel: #161a1f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
+[hidden] { display: none !important; }
+
+.panel { max-width: 420px; margin: 0 auto; padding: 32px 16px; display: grid; gap: 16px; }
+h1 { margin: 0; font-size: 1.6rem; }
+label { display: grid; gap: 6px; color: var(--muted); }
+select, button { font: inherit; padding: 12px; border-radius: 10px; border: 1px solid #2a3038; background: var(--panel); color: var(--fg); }
+#go { background: var(--ok); color: #04130a; border: 0; font-weight: 600; }
+.error { color: var(--bad); }
+
+#live { position: fixed; inset: 0; }
+.stage { position: absolute; inset: 0; display: grid; place-items: center; background: #000; }
+#preview { width: 100%; height: 100%; object-fit: contain; }
+.guide {
+  position: absolute; inset: 12% 8%;
+  border: 3px dashed var(--warn); border-radius: 12px;
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;
+  pointer-events: none; transition: border-color .2s;
+}
+.guide.ok { border-style: solid; border-color: var(--ok); }
+.guide.bad { border-color: var(--bad); }
+.guide span { background: rgb(0 0 0 / .6); padding: 4px 10px; border-radius: 6px; font-size: .9rem; }
+
+.bar { position: absolute; left: 0; right: 0; display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgb(0 0 0 / .55); }
+header.bar { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+footer.bar { bottom: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+.controls button, .controls select { padding: 8px 12px; }
+.state { font-weight: 700; }
+.state.live { color: var(--ok); }
+.state.reconnecting { color: var(--warn); }
+.state.offline { color: var(--bad); }
+.hint { position: absolute; left: 0; right: 0; bottom: 64px; margin: 0; text-align: center; color: var(--muted); font-size: .85rem; }

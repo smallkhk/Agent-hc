@@ -1,5 +1,5 @@
 -- CODM Hand Cam Agent schema (MySQL 8)
--- Apply with: mysql handcam < db/schema.sql
+-- Apply with: npm run db:migrate (runs this file, then db/migrations/*.sql in order)
 
 CREATE TABLE IF NOT EXISTS guilds (
   id               BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   token_hash        CHAR(64)     NOT NULL,           -- sha256 of the one-time cam link token
   token_expires_at  DATETIME(3)  NOT NULL,           -- cam links expire
   token_used_at     DATETIME(3)  NULL,               -- cam links are single-use
+  device_hash       CHAR(64)     NULL,               -- sha256 of the cookie that binds the link to the first device
   last_heartbeat_at DATETIME(3)  NULL,               -- worker heartbeat; API marks STALE when missing
   started_at        DATETIME(3)  NULL,
   ended_at          DATETIME(3)  NULL,

@@ -1,0 +1,21 @@
+{
+  "name": "handcam-agent",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "api": "node --env-file=.env api/server.js",
+    "db:migrate": "node --env-file=.env db/migrate.js",
+    "cli": "node --env-file=.env scripts/handcam.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "express": "^4.22.3",
+    "livekit-client": "^2.23.0",
+    "livekit-server-sdk": "^2.19.2",
+    "mysql2": "^3.24.6",
+    "zod": "^4.6.7"
+  }
+}

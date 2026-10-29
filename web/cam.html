@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <title>Hand Cam</title>
+  <link rel="stylesheet" href="cam.css">
+</head>
+<body>
+  <main id="start" class="panel">
+    <h1>Hand Cam</h1>
+    <p id="match"></p>
+    <p>Use this on a <strong>second device</strong>. Point the camera at the phone or iPad you play on.</p>
+    <label>Quality
+      <select id="res">
+        <option value="360p">360p (Data saver)</option>
+        <option value="480p">480p</option>
+        <option value="720p">720p</option>
+      </select>
+    </label>
+    <button id="go" type="button">Start hand cam</button>
+    <p id="error" class="error" role="alert" hidden></p>
+  </main>
+
+  <main id="live" hidden>
+    <div class="stage">
+      <video id="preview" autoplay muted playsinline></video>
+      <div id="guide" class="guide"><span id="guide-text">Fit your whole screen inside the box</span></div>
+    </div>
+    <header class="bar">
+      <span id="state" class="state">Connecting…</span>
+      <span id="data">0 MB</span>
+    </header>
+    <footer class="bar controls">
+      <button id="flip" type="button">Switch camera</button>
+      <button id="torch" type="button" hidden>Torch</button>
+      <select id="res-live" aria-label="Quality">
+        <option value="360p">360p</option>
+        <option value="480p">480p</option>
+        <option value="720p">720p</option>
+      </select>
+    </footer>
+    <p id="hint" class="hint">Keep this page open and the device plugged in.</p>
+  </main>
+
+  <script src="/vendor/livekit-client.umd.js"></script>
+  <script src="cam.js"></script>
+</body>
+</html>

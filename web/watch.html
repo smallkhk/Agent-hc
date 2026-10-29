@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Hand Cam Viewer</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b0d10; --fg: #eef1f4; --muted: #9aa4ae; --ok: #22c55e; --bad: #ef4444; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 15px/1.4 system-ui, sans-serif; }
+    header { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; }
+    #state.live { color: var(--ok); } #state.offline { color: var(--bad); }
+    #feed { display: block; width: 100%; height: calc(100% - 44px); object-fit: contain; background: #000; }
+    #stats { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <strong id="room">Hand Cam</strong>
+    <span id="stats"></span>
+    <span id="state">Connecting…</span>
+  </header>
+  <video id="feed" autoplay muted playsinline></video>
+  <script src="/vendor/livekit-client.umd.js"></script>
+  <script src="watch.js"></script>
+</body>
+</html>

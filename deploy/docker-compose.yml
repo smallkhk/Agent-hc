@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
 
   livekit:
-    image: livekit/livekit-server:v1.8
+    image: livekit/livekit-server:v1.13
     command: ["--config", "/etc/livekit.yaml"]
     network_mode: host
     environment:
