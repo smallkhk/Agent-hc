@@ -4,6 +4,8 @@ import { createClient } from 'redis';
 import { config } from '../config.js';
 
 export const SESSIONS_CHANNEL = 'handcam:sessions';
+// {eventId} for each warning/violation that should alert admins.
+export const EVENTS_CHANNEL = 'handcam:events';
 
 let client = null;
 
@@ -36,4 +38,21 @@ export async function subscribe(channel, onMessage) {
     }
   });
   return sub;
+}
+
+// "Ignore 10m": alerts of one type for one session are stored but not posted.
+const muteKey = (sessionId, type) => `handcam:mute:${sessionId}:${type}`;
+
+export async function mute(sessionId, type, seconds) {
+  if (!config.REDIS_URL) return;
+  await (await connect()).set(muteKey(sessionId, type), '1', { EX: seconds });
+}
+
+export async function isMuted(sessionId, type) {
+  if (!config.REDIS_URL) return false;
+  try {
+    return Boolean(await (await connect()).exists(muteKey(sessionId, type)));
+  } catch {
+    return false; // fail open: better a duplicate alert than a missed one
+  }
 }

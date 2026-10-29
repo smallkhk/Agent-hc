@@ -8,7 +8,8 @@ That page streams to the self-hosted LiveKit server, where admins watch and the 
 ## Setup
 
 1. **Server:** Ubuntu with Docker, Node 20.12+, MySQL 8, Nginx. Open UDP 50000–60000 and TCP 7881 for LiveKit media.
-2. `cp .env.example .env` and fill it in. `npm ci`, then `npm run db:migrate`.
+2. `cp .env.example .env` and fill it in (`WORKER_SECRET`: `openssl rand -hex 32`). `npm ci`, then `npm run db:migrate`.
+   Vision worker: `python3.11 -m venv .venv && .venv/bin/pip install -r worker/requirements.txt`.
 3. `cd deploy && docker compose --env-file ../.env up -d` (LiveKit + Redis).
 4. Nginx: copy `deploy/nginx/handcam.conf`, replace the domains, run certbot.
 5. **Discord app** ([Developer Portal](https://discord.com/developers/applications)):
@@ -32,5 +33,21 @@ That page streams to the self-hosted LiveKit server, where admins watch and the 
 | `/handcam config` | Admin | Alert channel, admin role, self join, rule thresholds. No options shows current settings |
 
 Admins are members with **Manage Server**, or the role set with `/handcam config admin_role:`.
+
+## Alerts
+
+The vision worker checks every live cam twice a second and posts to the alert channel:
+
+| Alert | When (defaults, change with `/handcam config`) |
+|---|---|
+| Screen partly out of frame / not visible / too small / too dark | warning after 10 s, violation after 30 s |
+| Glare hides the screen | warning after 10 s |
+| Camera feed frozen (or camera covered) | violation after 8 s |
+| Hand cam disconnected | violation after 20 s |
+
+Each alert has the snapshot and **Confirm / False positive / Ignore 10m** buttons (admins only; first click wins).
+Confirm and False positive are saved as training labels. The player's cam page shows what is wrong in the guide box.
+
+Worker tests: `.venv/bin/pip install pytest && .venv/bin/python -m pytest worker/tests`.
 
 Without the bot: `npm run cli -- new --guild <id> --user <id>` prints a cam link, `npm run cli -- watch --session <id>` a 1-hour watch link.

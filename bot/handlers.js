@@ -9,6 +9,7 @@ import {
   reissueCamLink,
   sessionEventCounts,
 } from '../api/lib/sessions.js';
+import { handleAlertButton } from './alerts.js';
 import { camLinkMessage, COLORS, formatDuration, statusEmbed } from './embeds.js';
 
 const LOBBY_MAX = 50;
@@ -231,7 +232,15 @@ const routes = {
   'lobby stop': lobbyStop,
 };
 
+const isGuildAdmin = async (interaction) => isAdmin(interaction, await getGuildConfig(interaction.guildId));
+
 export async function handleInteraction(interaction) {
+  if (interaction.isButton() && interaction.customId.startsWith('hc:')) {
+    return handleAlertButton(interaction, isGuildAdmin).catch((err) => {
+      console.error(`alert button ${interaction.customId} failed:`, err.stack);
+      return interaction.reply({ content: 'Something went wrong.', ...ephemeral }).catch(() => {});
+    });
+  }
   if (!interaction.isChatInputCommand() || interaction.commandName !== 'handcam') return;
   const group = interaction.options.getSubcommandGroup(false);
   const sub = interaction.options.getSubcommand();

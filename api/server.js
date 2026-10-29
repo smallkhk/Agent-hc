@@ -4,6 +4,8 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import { config } from './config.js';
 import { camRouter } from './routes/cam.js';
+import { internalRouter } from './routes/internal.js';
+import { startStaleChecker } from './lib/stale.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const app = express();
@@ -15,6 +17,7 @@ app.use(cookieParser());
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 app.use('/api/cam', camRouter);
+app.use('/internal', internalRouter);
 
 app.get('/vendor/livekit-client.umd.js', (_req, res) =>
   res.sendFile(path.join(root, 'node_modules/livekit-client/dist/livekit-client.umd.js')),
@@ -29,3 +32,4 @@ app.use((err, req, res, _next) => {
 });
 
 app.listen(config.PORT, '127.0.0.1', () => console.log(`api listening on :${config.PORT}`));
+startStaleChecker();

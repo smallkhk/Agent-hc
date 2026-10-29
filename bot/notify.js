@@ -5,7 +5,8 @@ import { getGuildConfig } from '../api/lib/guildConfig.js';
 const TEXT = {
   live: (m) => `📹 <@${m.discordUserId}> opened their hand cam${m.matchLabel ? ` (${m.matchLabel})` : ''}.`,
   ended: (m) => `⏹️ <@${m.discordUserId}>’s hand cam session ended.`,
-  stale: (m) => `⚠️ Lost the feed from <@${m.discordUserId}>’s hand cam.`,
+  stale: (m) => `⚠️ <@${m.discordUserId}>’s hand cam is no longer being checked (vision worker not responding).`,
+  recovered: (m) => `✅ Checking <@${m.discordUserId}>’s hand cam again.`,
 };
 
 export async function startNotifier(client) {

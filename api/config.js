@@ -8,6 +8,9 @@ const schema = z.object({
   LIVEKIT_API_SECRET: z.string().min(1),
   MYSQL_URL: z.string().min(1),
   REDIS_URL: z.string().optional(),
+  // Shared secret for the vision worker's /internal calls. Generate: openssl rand -hex 32
+  WORKER_SECRET: z.string().min(32),
+  STORAGE_DIR: z.string().min(1).default('/var/handcam/recordings'),
   DEFAULT_CAM_RES: z.enum(['360p', '480p', '720p']).default('480p'),
   CAM_LINK_TTL_MIN: z.coerce.number().int().positive().default(30),
 });

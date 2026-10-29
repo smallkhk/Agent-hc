@@ -15,7 +15,7 @@ export function badge(session, counts) {
   if (!session) return { emoji: '➖', label: 'No hand cam', color: COLORS.idle };
   if (session.status === 'pending') return { emoji: '⏳', label: 'Waiting for cam', color: COLORS.idle };
   if (counts.openViolations) return { emoji: '❌', label: 'Violation', color: COLORS.bad };
-  if (session.status === 'stale') return { emoji: '⚠️', label: 'Feed lost', color: COLORS.warn };
+  if (session.status === 'stale') return { emoji: '⚠️', label: 'Not being checked', color: COLORS.warn };
   if (counts.openWarnings) return { emoji: '⚠️', label: 'Warning', color: COLORS.warn };
   return { emoji: '✅', label: 'OK', color: COLORS.ok };
 }
@@ -28,9 +28,12 @@ export function statusEmbed(userId, session, counts) {
     .setDescription(`Hand cam for <@${userId}>`);
   if (!session) return embed;
 
-  const uptime = session.startedAt ? (Date.now() - new Date(session.startedAt).getTime()) / 1000 : 0;
+  const elapsed = session.startedAt ? (Date.now() - new Date(session.startedAt).getTime()) / 1000 : 0;
+  // Share of the session with frames reaching the vision worker.
+  const camUptime = elapsed > 60 ? `${Math.min(100, Math.round((100 * Number(session.uptimeSec)) / elapsed))}%` : '—';
   embed.addFields(
-    { name: 'Live for', value: session.startedAt ? formatDuration(uptime) : '—', inline: true },
+    { name: 'Live for', value: session.startedAt ? formatDuration(elapsed) : '—', inline: true },
+    { name: 'Cam uptime', value: camUptime, inline: true },
     { name: 'Match', value: session.matchLabel || '—', inline: true },
     { name: 'Data used', value: formatBytes(Number(session.dataBytes || 0)), inline: true },
     { name: 'Warnings', value: String(counts.warnings), inline: true },
