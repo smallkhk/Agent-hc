@@ -34,6 +34,10 @@
   let unreportedBytes = 0;
 
   $('res').value = res;
+  $('preview').addEventListener('resize', (e) => {
+    const { videoWidth: w, videoHeight: h } = e.target;
+    if (w && h) $('frame').style.setProperty('--ar', `${w} / ${h}`);
+  });
 
   function showError(message) {
     $('live').hidden = true;
