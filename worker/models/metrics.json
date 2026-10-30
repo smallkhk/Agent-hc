@@ -1,0 +1,63 @@
+{
+  "macro_f1": 0.924,
+  "per_class": {
+    "normal_gameplay": {
+      "precision": 0.75,
+      "recall": 0.857,
+      "support": 7
+    },
+    "codm_menu_ui": {
+      "precision": 1.0,
+      "recall": 0.9,
+      "support": 10
+    },
+    "mod_menu": {
+      "precision": 0.983,
+      "recall": 0.983,
+      "support": 60
+    },
+    "esp_overlay": {
+      "precision": 0.967,
+      "recall": 0.967,
+      "support": 60
+    }
+  },
+  "confusion": [
+    [
+      6,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      9,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      59,
+      1
+    ],
+    [
+      2,
+      0,
+      0,
+      58
+    ]
+  ],
+  "classes": [
+    "normal_gameplay",
+    "codm_menu_ui",
+    "mod_menu",
+    "esp_overlay"
+  ],
+  "train_counts": {
+    "normal_gameplay": 26,
+    "codm_menu_ui": 39,
+    "mod_menu": 240,
+    "esp_overlay": 240
+  }
+}

@@ -8,4 +8,8 @@ __pycache__/
 *.log
 worker/models/*.onnx
 worker/models/*.json
+# the shipped model (retrain to replace it)
+!worker/models/menu_classifier.onnx
+!worker/models/labels.json
+!worker/models/metrics.json
 .venv-train/

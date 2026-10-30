@@ -1,0 +1,28 @@
+{
+  "classes": [
+    "normal_gameplay",
+    "codm_menu_ui",
+    "mod_menu",
+    "esp_overlay"
+  ],
+  "suspicious": [
+    "mod_menu",
+    "esp_overlay"
+  ],
+  "input": {
+    "width": 448,
+    "height": 224
+  },
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "arch": "mobilenet_v3_large",
+  "trained_at": "2026-10-30T13:29:31Z"
+}
