@@ -13,27 +13,27 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .login-card { z-index: 1; }
 .glow-discord { width: 100%; filter: drop-shadow(0 0 18px rgb(88 101 242 / 0.55)); }
 .login-card { width: min(420px, 100%); padding: 40px 28px 28px; display: grid; justify-items: center; gap: 12px; text-align: center; }
-.login-card h1 { margin: 0 0 4px; font-size: 2rem; }
+.login-card h1 { margin: 0 0 4px; font-size: 2.3rem; background: var(--grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .login-card .muted { margin: 0 0 14px; max-width: 32ch; }
-.login-mark { width: 56px; height: 56px; margin-bottom: 6px; }
+.login-mark { width: 64px; height: 64px; margin-bottom: 6px; border-radius: 20px; }
 .login-mark svg { width: 32px; height: 32px; }
 
 /* --- top bar --------------------------------------------------------------------------- */
 .topbar {
   position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  padding: 12px 20px; background: rgb(7 9 12 / 0.62); backdrop-filter: blur(16px) saturate(1.3); border-bottom: 1px solid var(--line);
+  padding: 12px 20px; background: rgb(30 14 80 / 0.45); backdrop-filter: blur(20px) saturate(1.4); border-bottom: 1px solid var(--line);
 }
 .banner { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 26px 28px; margin-bottom: 18px; --cut: 16px; }
 .banner-text { position: relative; z-index: 1; }
-.banner h1 { margin: 4px 0 6px; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1; text-shadow: 0 0 30px var(--accent-glow); }
+.banner h1 { margin: 4px 0 6px; font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1; background: var(--grad-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .banner p { margin: 0; }
 .banner-radar { position: absolute; right: -40px; top: 50%; width: 300px; height: 300px; transform: translateY(-50%); opacity: 0.8; }
 .topbar-sep { width: 1px; height: 24px; background: var(--line-2); }
 .topbar .select { min-width: 180px; }
 .stats { display: flex; gap: 8px; }
 .stat {
-  display: inline-flex; align-items: baseline; gap: 8px; padding: 6px 12px; background: rgb(16 20 26 / 0.7);
-  box-shadow: inset 0 0 0 1px var(--line); clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  display: inline-flex; align-items: baseline; gap: 8px; padding: 7px 14px; background: var(--glass-2);
+  box-shadow: inset 0 0 0 1px var(--line); border-radius: 14px;
 }
 .stat b { font-family: var(--font-display); font-size: 1.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .stat span { font-family: var(--font-display); font-weight: 600; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
@@ -43,7 +43,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .user { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 0.9rem; }
 .avatar {
   width: 30px; height: 30px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink);
-  font-family: var(--font-display); font-weight: 700; clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+  font-family: var(--font-display); font-weight: 800; border-radius: 50%; background: var(--grad); color: #fff;
 }
 
 /* --- grid ------------------------------------------------------------------------------ */
@@ -53,21 +53,21 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   position: relative; padding: 10px 14px; background: none; border: 0; cursor: pointer; color: var(--muted);
   font-family: var(--font-display); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.82rem; white-space: nowrap;
 }
-.tab span { margin-left: 6px; padding: 1px 6px; background: var(--surface-3); color: var(--text-2); font-size: 0.72rem; }
+.tab span { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--glass-2); color: var(--text-2); font-size: 0.72rem; }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--text); }
-.tab.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent); }
+.tab.active::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 3px; border-radius: 3px; background: var(--grad); }
 
 .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 .card {
   --state: var(--line-2);
   position: relative; display: block; padding: 0; border: 0; text-align: left; cursor: pointer; color: inherit;
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015) 50%), rgb(16 20 26 / 0.82);
-  backdrop-filter: blur(10px);
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  background: linear-gradient(150deg, rgb(255 255 255 / 0.15), rgb(255 255 255 / 0.05) 60%);
+  backdrop-filter: blur(20px) saturate(1.3);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
   transition: transform 0.12s, background 0.15s;
 }
-.card::before { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px var(--state); pointer-events: none; z-index: 2; }
+.card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--state); pointer-events: none; z-index: 2; }
 .card:hover { transform: translateY(-3px); --state: color-mix(in srgb, var(--accent) 70%, transparent); }
 .card:hover .thumb img { transform: scale(1.03); }
 .thumb img { transition: transform 0.3s; }
@@ -75,7 +75,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .card.violation { --state: rgb(255 71 87 / 0.65); }
 .card.warning { --state: rgb(255 176 0 / 0.5); }
 .card.violation .thumb { box-shadow: inset 0 0 40px rgb(255 71 87 / 0.35); }
-.thumb { position: relative; aspect-ratio: 16 / 9; background: #000; display: grid; place-items: center; overflow: hidden; }
+.thumb { position: relative; aspect-ratio: 16 / 9; background: rgb(10 4 30 / 0.55); display: grid; place-items: center; overflow: hidden; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; }
 .thumb .brackets { inset: 10px; --b: 16px; --c: rgb(255 255 255 / 0.55); }
 .card.violation .thumb .brackets { --c: var(--bad); }
@@ -83,7 +83,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .thumb .chip { position: absolute; top: 10px; left: 10px; z-index: 1; }
 .thumb .placeholder { display: grid; justify-items: center; gap: 8px; color: var(--muted); font-family: var(--font-display); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.78rem; }
 .thumb .placeholder svg { width: 28px; height: 28px; opacity: 0.6; }
-.card.compact .thumb { aspect-ratio: auto; height: 72px; background: var(--bg-2); }
+.card.compact .thumb { aspect-ratio: auto; height: 72px; background: rgb(255 255 255 / 0.04); }
 .card.compact .thumb .placeholder { grid-auto-flow: column; align-items: center; }
 .card.compact .thumb .placeholder svg { width: 18px; height: 18px; }
 @media (min-width: 721px) { .card.compact .thumb { aspect-ratio: 16 / 9; height: auto; } .card.compact .thumb .placeholder { grid-auto-flow: row; } }
@@ -97,7 +97,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .empty { display: grid; justify-items: center; gap: 10px; padding: 80px 16px; text-align: center; }
 .empty h2 { margin: 8px 0 0; font-size: 1.4rem; }
 .empty p { margin: 0; }
-.empty-mark { position: relative; width: 84px; height: 84px; display: grid; place-items: center; color: var(--accent); }
+.empty-mark { position: relative; width: 84px; height: 84px; display: grid; place-items: center; color: #fff; border-radius: 24px; background: var(--grad); box-shadow: 0 10px 30px var(--accent-glow); }
+.empty-mark .brackets { display: none; }
 .empty-mark svg { width: 34px; height: 34px; }
 
 /* --- drawer ---------------------------------------------------------------------------- */
@@ -105,7 +106,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .drawer {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 5; width: min(760px, 100vw);
   display: flex; flex-direction: column;
-  background: radial-gradient(80% 40% at 100% 0%, var(--accent-soft), transparent 70%), rgb(11 14 19 / 0.96); backdrop-filter: blur(18px); border-left: 1px solid var(--line-2);
+  background: radial-gradient(70% 35% at 100% 0%, color-mix(in srgb, var(--pink) 35%, transparent), transparent 70%),
+    radial-gradient(60% 30% at 0% 100%, color-mix(in srgb, var(--blue) 35%, transparent), transparent 70%), rgb(30 12 78 / 0.92);
+  backdrop-filter: blur(24px); border-left: 1px solid var(--line-2);
   box-shadow: -20px 0 60px rgb(0 0 0 / 0.5); animation: slide-in 0.18s ease-out;
 }
 @keyframes slide-in { from { transform: translateX(24px); opacity: 0; } }
@@ -119,7 +122,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .drawer-body { overflow-y: auto; overflow-x: hidden; padding: 4px 18px 40px; }
 .timeline, .ev, .ev-media { min-width: 0; }
 
-.viewer { position: relative; margin-top: 16px; background: #000; aspect-ratio: 16 / 9; }
+.viewer { position: relative; margin-top: 16px; background: #000; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
 .viewer video { width: 100%; height: 100%; object-fit: contain; }
 .viewer .brackets { inset: 10px; --b: 22px; --t: 3px; }
 .viewer .chip { position: absolute; top: 14px; left: 14px; }
@@ -132,7 +135,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   --sev: var(--muted);
   position: relative; display: grid; gap: 10px; padding: 12px 14px 14px 18px;
   background: linear-gradient(90deg, color-mix(in srgb, var(--sev) 9%, transparent), transparent 40%), var(--surface);
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  border-radius: 16px; overflow: hidden;
 }
 .ev::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--sev); }
 .ev.violation { --sev: var(--bad); }
@@ -143,10 +146,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .ev-head .time { margin-left: auto; color: var(--muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 .ev-head .score { color: var(--muted); font-size: 0.78rem; }
 .ev-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 8px; }
-.ev-media a, .ev-media video { display: block; aspect-ratio: 16 / 9; background: #000; width: 100%; object-fit: cover; }
+.ev-media a, .ev-media video { display: block; aspect-ratio: 16 / 9; background: #000; width: 100%; object-fit: cover; border-radius: 12px; overflow: hidden; }
 .ev-media { grid-template-columns: minmax(0, 520px); }
 .ev-media img { width: 100%; height: 100%; object-fit: cover; }
-.ev-verdict { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; background: var(--surface-2); color: var(--text-2); font-size: 0.86rem; }
+.ev-verdict { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--glass-2); color: var(--text-2); font-size: 0.86rem; }
 .ev-verdict svg { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--accent); }
 .ev-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .ev-actions .btn { min-height: 34px; padding: 0 12px; font-size: 0.78rem; }
@@ -154,12 +157,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .resolved-by svg { width: 16px; height: 16px; color: var(--ok); }
 
 .recordings { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.recordings li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface); }
+.recordings li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--glass); border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); }
 .recordings li svg { width: 18px; height: 18px; color: var(--muted); flex: none; }
 .recordings a { font-variant-numeric: tabular-nums; font-weight: 500; text-decoration: none; }
 .recordings a:hover { color: var(--accent); }
 .recordings .size { margin-left: auto; color: var(--muted); font-size: 0.82rem; }
-.none { color: var(--muted); padding: 14px; background: var(--surface); list-style: none; }
+.none { color: var(--muted); padding: 16px; background: var(--glass); border-radius: 14px; list-style: none; }
 
 @media (max-width: 720px) {
   .banner { padding: 18px 18px; }
@@ -174,3 +177,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   .drawer-actions { padding-left: 18px; }
   .drawer-title h2 { font-size: 1.35rem; }
 }
+
+/* Status glow on cards (works now that cards are rounded, not clipped) */
+.card.violation { box-shadow: 0 0 0 1px rgb(255 82 119 / 0.6), 0 12px 40px rgb(255 61 113 / 0.35); }
+.card.warning { box-shadow: 0 0 0 1px rgb(255 201 77 / 0.5), 0 12px 40px rgb(255 201 77 / 0.2); }
+.card:hover { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.4), 0 16px 44px var(--accent-glow); }
+.stat.live { box-shadow: inset 0 0 0 1px rgb(255 61 113 / 0.45); }
+.user .avatar { box-shadow: 0 4px 14px var(--accent-glow); }

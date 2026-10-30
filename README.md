@@ -29,7 +29,8 @@ Players only use a browser: nothing to install.
 ## Branding
 
 Players and admins see your name, colour and logo, not "HANDCAM". In `.env`:
-`BRAND_NAME` (e.g. `FM Esports`), `BRAND_TAGLINE`, `BRAND_ACCENT` (hex colour, e.g. `#E5193B`; button text switches
+`BRAND_NAME` (e.g. `FM Esports`), `BRAND_TAGLINE`, `BRAND_ACCENT` (hex colour, default `#B14DFF` violet; it sits in
+the middle of the pink → accent → blue gradients used for buttons and highlights; button text switches
 to white or black automatically), and `BRAND_LOGO_URL` (put the file in `web/brand/`, then `/brand/logo.png`).
 Optional `BRAND_BG_URL` (e.g. `/brand/bg.jpg`) puts your own art behind every page, darkened so text stays readable.
 Use art you own or have permission for; official game logos and art belong to their publisher.

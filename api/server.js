@@ -46,7 +46,7 @@ if (dashboardEnabled()) {
 app.get('/vendor/livekit-client.umd.js', (_req, res) =>
   res.sendFile(path.join(root, 'node_modules/livekit-client/dist/livekit-client.umd.js')),
 );
-app.use('/vendor/fonts/chakra-petch', express.static(path.join(root, 'node_modules/@fontsource/chakra-petch'), { maxAge: '30d' }));
+app.use('/vendor/fonts/outfit', express.static(path.join(root, 'node_modules/@fontsource/outfit'), { maxAge: '30d' }));
 app.use('/vendor/fonts/inter', express.static(path.join(root, 'node_modules/@fontsource-variable/inter'), { maxAge: '30d' }));
 app.get('/vendor/socket.io.min.js', (_req, res) =>
   res.sendFile(path.join(root, 'node_modules/socket.io/client-dist/socket.io.min.js')),
