@@ -26,7 +26,8 @@ const schema = z.object({
   // Branding shown on the cam page and dashboard.
   BRAND_NAME: z.string().max(40).default('HANDCAM'),
   BRAND_TAGLINE: z.string().max(80).default('Match integrity check'),
-  BRAND_ACCENT: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#B14DFF'),
+  BRAND_THEME: z.enum(['ranger', 'steel', 'nightops']).default('ranger'),
+  BRAND_ACCENT: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal('')), // overrides the theme accent
   BRAND_LOGO_URL: z.string().optional(), // e.g. /brand/logo.png (put the file in web/brand/)
   BRAND_BG_URL: z.string().optional(), // background art for hero areas, e.g. /brand/bg.jpg
   DEFAULT_CAM_RES: z.enum(['360p', '480p', '720p']).default('480p'),

@@ -23,6 +23,14 @@
   };
   const ACTION_TEXT = { confirmed: 'Confirmed', false_positive: 'False positive', ignored: 'Ignored 10 min' };
   const icon = (name) => `<svg><use href="#i-${name}"/></svg>`;
+  const ti = (name) => `<svg class="i"><use href="/art/icons.svg#ti-${name}"/></svg>`;
+  const PAGES = {
+    all: ['Overview', 'All hand cams in this server.'],
+    live: ['Live', 'Cams streaming right now.'],
+    flagged: ['Flagged', 'Players with open warnings or violations. Review these first.'],
+    pending: ['Waiting', 'Cam links sent but not opened yet.'],
+    ended: ['Ended', 'Sessions from the last 24 hours.'],
+  };
 
   const store = {
     get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -35,6 +43,7 @@
   let openId = null;
   let room = null;
   let filter = 'all';
+  let query = '';
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   const media = (rel) => `/admin/media/${rel}`;
@@ -59,7 +68,7 @@
   }
 
   function showLogin() {
-    for (const id of ['top', 'grid-wrap', 'detail', 'scrim']) $(id).hidden = true;
+    for (const id of ['app', 'top', 'grid-wrap', 'detail', 'scrim']) $(id).hidden = true;
     $('login').hidden = false;
     return null;
   }
@@ -99,10 +108,17 @@
     const live = sessions.filter((s) => s.status === 'live').length;
     const flagged = sessions.filter((s) => s.status !== 'ended' && Number(s.openViolations)).length;
     const waiting = count('pending');
+    const alerts = sessions.reduce((n, s) => n + Number(s.alerts || 0), 0);
+    const kpi = (cls, iconName, label, value, note) =>
+      `<div class="kpi ${cls}"><div class="kpi-top"><span class="label">${label}</span>${ti(iconName)}</div>` +
+      `<b class="num">${value}</b><span class="kpi-note">${note}</span></div>`;
     $('counts').innerHTML =
-      `<span class="stat live"><span class="dot pulse"></span><b>${live}</b><span>Live</span></span>` +
-      `<span class="stat ${flagged ? 'bad' : ''}"><b>${flagged}</b><span>Flagged</span></span>` +
-      `<span class="stat"><b>${waiting}</b><span>Waiting</span></span>`;
+      kpi('live', 'broadcast', 'Live now', live, live ? 'Streaming to the AI' : 'No cams streaming') +
+      kpi(flagged ? 'bad' : '', 'alert-triangle', 'Flagged', flagged, flagged ? 'Open violations to review' : 'Nothing to review') +
+      kpi('', 'hourglass', 'Waiting', waiting, 'Links not opened yet') +
+      kpi('', 'flag', 'Alerts', alerts, 'Across listed sessions');
+    $('page-title').textContent = PAGES[filter][0];
+    $('page-sub').textContent = PAGES[filter][1];
     for (const tab of document.querySelectorAll('.tab')) {
       tab.classList.toggle('active', tab.dataset.filter === filter);
       tab.querySelector('span').textContent = count(tab.dataset.filter);
@@ -110,7 +126,9 @@
 
     // Problems first, then live, waiting, ended.
     const rank = (s) => (s.status === 'ended' ? 4 : s.status === 'pending' ? 3 : Number(s.openViolations) ? 0 : Number(s.openWarnings) || s.status === 'stale' ? 1 : 2);
-    const shown = sessions.filter(FILTERS[filter]).sort((a, b) => rank(a) - rank(b) || b.id - a.id);
+    const q = query.trim().toLowerCase();
+    const matches = (s) => !q || `${playerName(s)} ${s.matchLabel ?? ''} ${s.discordUserId}`.toLowerCase().includes(q);
+    const shown = sessions.filter((s) => FILTERS[filter](s) && matches(s)).sort((a, b) => rank(a) - rank(b) || b.id - a.id);
     $('empty').hidden = shown.length > 0;
     $('grid').innerHTML = shown.map((s) => {
       const b = badge(s);
@@ -260,6 +278,10 @@
   });
   $('close').addEventListener('click', closeDetail);
   $('scrim').addEventListener('click', closeDetail);
+  $('search').addEventListener('input', (e) => {
+    query = e.target.value;
+    renderGrid();
+  });
   $('tabs').addEventListener('click', (e) => {
     const tab = e.target.closest('.tab');
     if (!tab) return;
@@ -293,6 +315,7 @@
     me = await api('/admin/api/me');
     if (!me) return;
     $('login').hidden = true;
+    $('app').hidden = false;
     $('top').hidden = false;
     $('grid-wrap').hidden = false;
     $('me').textContent = me.name;
@@ -301,7 +324,7 @@
     guild = me.guilds.some((g) => g.id === saved) ? saved : me.guilds[0].id;
     $('guild').innerHTML = me.guilds.map((g) => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
     $('guild').value = guild;
-    $('guild').hidden = me.guilds.length < 2;
+    $('guild').disabled = me.guilds.length < 2;
     await loadSessions();
 
     // Live updates; the 15 s poll covers a dropped socket.

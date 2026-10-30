@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#2a0f6e">
+  <meta name="theme-color" content="#15190f">
   <title>Hand Cam</title>
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="cam.css">
@@ -26,57 +26,63 @@
     <symbol id="i-flag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></g></symbol>
   </svg>
 
-  <!-- 1. Setup -->
-  <main id="start" class="screen grid-bg">
-    <div class="wrap">
+  <!-- 1. Setup: photo hero + briefing; split screen on wide displays -->
+  <main id="start" class="setup">
+    <section class="setup-hero photo">
       <header class="top">
         <a class="brand" href="#"><span class="brand-mark"><svg><use href="#i-mark"/></svg></span><span class="brand-name" data-brand-name>HANDCAM</span></a>
         <span id="match" class="chip chip-accent" hidden></span>
       </header>
-
-      <section class="hero">
-        <div class="radar hero-radar" aria-hidden="true"><i></i><i></i><i></i></div>
-        <p class="label">Hand cam check</p>
+      <div class="hero-copy">
+        <p class="label eyebrow">Hand cam check</p>
         <h1 class="display" id="hello">Go live</h1>
-        <p class="lead">Your lobby needs to see your hands and your whole game screen while you play.</p>
-        <ul class="trust">
-          <li><svg><use href="#i-shield"/></svg>Secure link</li>
-          <li><svg><use href="#i-eye"/></svg>AI monitored</li>
-          <li><svg><use href="#i-sync"/></svg>Auto-reconnect</li>
-        </ul>
-      </section>
+        <p class="lead">Your lobby needs eyes on your hands and your whole game screen for the full match.</p>
+      </div>
+    </section>
 
+    <section class="setup-body">
+      <ul class="trust">
+        <li><svg class="i"><use href="/art/icons.svg#ti-shield-check"/></svg>Secure one-time link</li>
+        <li><svg class="i"><use href="/art/icons.svg#ti-eye"/></svg>AI monitored</li>
+        <li><svg class="i"><use href="/art/icons.svg#ti-refresh"/></svg>Auto-reconnect</li>
+      </ul>
+
+      <h2 class="label section-title">Briefing</h2>
       <ol class="steps">
-        <li class="step panel panel-top">
-          <svg><use href="#i-device"/></svg>
+        <li class="step">
+          <span class="step-no">01</span>
           <div><b>Use a second device</b><span>Another phone, tablet or a laptop webcam. Not the one you play on.</span></div>
+          <svg class="i"><use href="/art/icons.svg#ti-device-mobile"/></svg>
         </li>
-        <li class="step panel panel-top">
-          <svg><use href="#i-frame"/></svg>
-          <div><b>Frame screen + hands</b><span>The whole game screen inside the brackets, with your hands visible.</span></div>
+        <li class="step">
+          <span class="step-no">02</span>
+          <div><b>Frame screen + hands</b><span>Your whole game screen inside the brackets, hands in view.</span></div>
+          <svg class="i"><use href="/art/icons.svg#ti-scan"/></svg>
         </li>
-        <li class="step panel panel-top">
-          <svg><use href="#i-bolt"/></svg>
-          <div><b>Keep it open</b><span>Plug the device in and leave this page on until the match ends.</span></div>
+        <li class="step">
+          <span class="step-no">03</span>
+          <div><b>Hold position</b><span>Plug the device in and keep this page open until the match ends.</span></div>
+          <svg class="i"><use href="/art/icons.svg#ti-bolt"/></svg>
         </li>
       </ol>
 
       <fieldset class="quality">
-        <legend class="label">Quality</legend>
+        <legend class="label section-title">Video quality</legend>
         <div class="segmented" id="res">
-          <label><input type="radio" name="res" value="360p"><span><b>Saver</b><small>360p · ~70 MB/30 min</small></span></label>
-          <label><input type="radio" name="res" value="480p"><span><b>Standard</b><small>480p · ~110 MB/30 min</small></span></label>
-          <label><input type="radio" name="res" value="720p"><span><b>HD</b><small>720p · ~270 MB/30 min</small></span></label>
+          <label><input type="radio" name="res" value="360p"><span><b>Saver</b><small>360p · ~70 MB</small></span></label>
+          <label><input type="radio" name="res" value="480p"><span><b>Standard</b><small>480p · ~110 MB</small></span></label>
+          <label><input type="radio" name="res" value="720p"><span><b>HD</b><small>720p · ~270 MB</small></span></label>
         </div>
+        <p class="fine">Data per 30-minute match.</p>
       </fieldset>
 
-      <div class="glow">
-        <button id="go" type="button" class="btn btn-primary btn-lg btn-block btn-shine">
+      <div class="cta-bar">
+        <button id="go" type="button" class="btn btn-primary btn-lg btn-block">
           <span class="dot"></span> Go live
         </button>
+        <p class="fine">Video is only used to check this match and is deleted after 7 days unless an admin flags it.</p>
       </div>
-      <p class="fine">Video is only used to check this match and is deleted after 7 days unless an admin flags it.</p>
-    </div>
+    </section>
   </main>
 
   <!-- 2. Live -->
@@ -117,15 +123,14 @@
   </main>
 
   <!-- 3. Can't continue (bad/used/expired link, session ended, no camera) -->
-  <main id="blocked" class="screen grid-bg" hidden>
-    <div class="wrap center">
+  <main id="blocked" class="blocked-screen photo" hidden>
+    <div class="blocked-wrap">
       <a class="brand" href="#"><span class="brand-mark"><svg><use href="#i-mark"/></svg></span><span class="brand-name" data-brand-name>HANDCAM</span></a>
       <div class="blocked panel panel-line panel-top">
-        <span class="accent-bar"></span>
         <svg class="blocked-icon" id="blocked-icon"><use href="#i-alert"/></svg>
         <h1 class="display" id="error-title">Can't start</h1>
         <p id="error" role="alert"></p>
-        <button id="retry" type="button" class="btn btn-ghost" hidden>Try again</button>
+        <button id="retry" type="button" class="btn" hidden>Try again</button>
       </div>
     </div>
   </main>

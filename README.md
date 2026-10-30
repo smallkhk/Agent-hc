@@ -28,13 +28,16 @@ Players only use a browser: nothing to install.
 
 ## Branding
 
-Players and admins see your name, colour and logo, not "HANDCAM". In `.env`:
-`BRAND_NAME` (e.g. `FM Esports`), `BRAND_TAGLINE`, `BRAND_ACCENT` (hex colour, default `#B14DFF` violet; it sits in
-the middle of the pink → accent → blue gradients used for buttons and highlights; button text switches
-to white or black automatically), and `BRAND_LOGO_URL` (put the file in `web/brand/`, then `/brand/logo.png`).
-Optional `BRAND_BG_URL` (e.g. `/brand/bg.jpg`) puts your own art behind every page, darkened so text stays readable.
-Use art you own or have permission for; official game logos and art belong to their publisher.
-Restart the API to apply.
+Players and admins see your name, colours and logo, not "HANDCAM". In `.env`:
+- `BRAND_NAME` (e.g. `FM Esports`), `BRAND_TAGLINE`.
+- `BRAND_THEME`: `ranger` (olive drab, default), `steel` (gunmetal and blue) or `nightops` (night-vision green).
+- `BRAND_ACCENT` (optional hex colour) replaces the theme's accent colour.
+- `BRAND_LOGO_URL`: put the file in `web/brand/`, then use `/brand/logo.png`.
+- `BRAND_BG_URL` (optional, e.g. `/brand/bg.jpg`) puts your own art faintly behind the pages.
+
+The built-in photos are public-domain US military photos, and the icons are Tabler (MIT); see
+[web/art/CREDITS.md](web/art/CREDITS.md). Use art you own or have permission for: official game logos and art belong to
+their publisher. Restart the API to apply.
 
 ## Using it
 

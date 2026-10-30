@@ -27,7 +27,8 @@ app.get('/api/brand', (_req, res) => {
   res.json({
     name: config.BRAND_NAME,
     tagline: config.BRAND_TAGLINE,
-    accent: config.BRAND_ACCENT,
+    theme: config.BRAND_THEME,
+    accent: config.BRAND_ACCENT || null,
     logoUrl: config.BRAND_LOGO_URL || null,
     bgUrl: config.BRAND_BG_URL || null,
   });
@@ -46,7 +47,7 @@ if (dashboardEnabled()) {
 app.get('/vendor/livekit-client.umd.js', (_req, res) =>
   res.sendFile(path.join(root, 'node_modules/livekit-client/dist/livekit-client.umd.js')),
 );
-app.use('/vendor/fonts/outfit', express.static(path.join(root, 'node_modules/@fontsource/outfit'), { maxAge: '30d' }));
+app.use('/vendor/fonts/barlow-condensed', express.static(path.join(root, 'node_modules/@fontsource/barlow-condensed'), { maxAge: '30d' }));
 app.use('/vendor/fonts/inter', express.static(path.join(root, 'node_modules/@fontsource-variable/inter'), { maxAge: '30d' }));
 app.get('/vendor/socket.io.min.js', (_req, res) =>
   res.sendFile(path.join(root, 'node_modules/socket.io/client-dist/socket.io.min.js')),
