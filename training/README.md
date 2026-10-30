@@ -29,6 +29,19 @@ they are not a mod menu, but whether they are gameplay or CODM's own menus has t
 What to gather: normal gameplay across many maps and modes, phone and iPad, bright and dim; CODM's own menus
 (lobby, settings, loadout, scoreboard); mod-menu and ESP screenshots and videos. Aim for a few hundred per class.
 
+**Synthetic hacks (bootstrap):** real hack screenshots are rare, so `synth.py` draws randomised mod-menu panels
+(title bar, tabs, toggle / checkbox / slider rows with cheat feature names) and ESP overlays (boxes, snap lines,
+health bars, distance tags, skeletons, FOV circles) onto your clean images. ESP is drawn on gameplay only.
+
+```bash
+.venv-train/bin/python -m training.synth --base training/dataset/normal_gameplay training/dataset/codm_menu_ui \
+    --out training/dataset --mod 400 --esp 400
+```
+
+Synthetic files are named `synth_*`; mix in every real hack example you get, and delete and regenerate the synthetic
+ones after adding new clean images. A model trained only on synthetic hacks has not been tested on real cheats: keep
+it in shadow mode until real examples are in the dataset.
+
 ## 2. Train
 
 ```bash
