@@ -20,6 +20,9 @@
   --accent: #ffb000;
   --accent-ink: #120c00;
   --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 45%, transparent);
+  --accent-2: #2de2e6; /* cool counter-light for depth */
+  --brand-bg: none;   /* BRAND_BG_URL: your own art behind the hero areas */
   --live: #ff3b3b;
   --ok: #34e08a;
   --ok-soft: rgb(52 224 138 / 0.12);
@@ -49,15 +52,50 @@ button, select, input { font: inherit; color: inherit; }
 img, video { display: block; max-width: 100%; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Faint tactical grid behind everything */
-.grid-bg {
+/* Atmosphere: warm key light in the brand colour, cool rim light, topographic map lines, film grain.
+   Optional BRAND_BG_URL art sits underneath, darkened so text stays readable. */
+.grid-bg, .atmo {
+  position: relative; isolation: isolate;
+  background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% -10%, var(--accent-soft), transparent 70%),
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: auto, 44px 44px, 44px 44px;
-  background-position: center, -1px -1px, -1px -1px;
+    radial-gradient(70% 55% at 12% -5%, var(--accent-glow), transparent 62%),
+    radial-gradient(55% 45% at 105% 18%, rgb(45 226 230 / 0.16), transparent 60%),
+    radial-gradient(60% 50% at 50% 115%, rgb(255 59 59 / 0.10), transparent 60%),
+    url('/art/topo.svg'),
+    linear-gradient(180deg, rgb(7 9 12 / 0.55), rgb(7 9 12 / 0.92)),
+    var(--brand-bg),
+    linear-gradient(180deg, #0b0f15, #06080b);
+  background-size: auto, auto, auto, cover, auto, cover, auto;
+  background-position: center, center, center, center, center, center, center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
+.grid-bg::after, .atmo::after {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Animated radar: rings, crosshair, rotating sweep and a few contacts. Size it with width/height. */
+.radar {
+  position: relative; border-radius: 50%; overflow: hidden; pointer-events: none;
+  background:
+    radial-gradient(circle, transparent 0 calc(50% - 1px), color-mix(in srgb, var(--accent) 55%, transparent) calc(50% - 1px) 50%, transparent 50%),
+    repeating-radial-gradient(circle, transparent 0 calc(12.5% - 1px), color-mix(in srgb, var(--accent) 22%, transparent) calc(12.5% - 1px) 12.5%),
+    linear-gradient(transparent calc(50% - 0.5px), color-mix(in srgb, var(--accent) 28%, transparent) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), color-mix(in srgb, var(--accent) 28%, transparent) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%);
+}
+.radar::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg 300deg, color-mix(in srgb, var(--accent) 10%, transparent) 320deg, color-mix(in srgb, var(--accent) 55%, transparent) 359deg, transparent 360deg);
+  animation: sweep 4s linear infinite;
+}
+.radar i { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: blip 4s ease-out infinite; }
+.radar i:nth-child(1) { left: 66%; top: 30%; animation-delay: 0.6s; }
+.radar i:nth-child(2) { left: 28%; top: 62%; animation-delay: 2.4s; background: var(--live); box-shadow: 0 0 10px var(--live); }
+.radar i:nth-child(3) { left: 58%; top: 72%; animation-delay: 3.1s; }
+@keyframes sweep { to { transform: rotate(360deg); } }
+@keyframes blip { 0% { opacity: 1; transform: scale(1.3); } 60%, 100% { opacity: 0.15; transform: scale(1); } }
 
 /* --- type ------------------------------------------------------------------------------ */
 .display { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
@@ -95,7 +133,19 @@ img, video { display: block; max-width: 100%; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.45; cursor: default; filter: none; }
 .btn svg { width: 17px; height: 17px; flex: none; }
-.btn-primary { --btn-bg: var(--accent); --btn-fg: var(--accent-ink); }
+.btn-primary {
+  --btn-bg: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff) 0%, var(--accent) 45%, color-mix(in srgb, var(--accent) 80%, #000) 100%);
+  --btn-fg: var(--accent-ink); position: relative; overflow: hidden;
+}
+/* Light sweep across hero buttons */
+.btn-shine::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-120%) skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  animation: shine 3.2s ease-in-out infinite;
+}
+@keyframes shine { 0%, 55% { transform: translateX(-120%) skewX(-20deg); } 85%, 100% { transform: translateX(120%) skewX(-20deg); } }
+/* clip-path cuts box-shadow, so glows go on a wrapper */
+.glow { filter: drop-shadow(0 0 18px var(--accent-glow)) drop-shadow(0 6px 22px rgb(0 0 0 / 0.5)); }
 .btn-danger { --btn-bg: var(--bad-soft); --btn-fg: #ff8a95; box-shadow: inset 0 0 0 1px rgb(255 71 87 / 0.35); }
 .btn-ok { --btn-bg: var(--ok-soft); --btn-fg: var(--ok); }
 .btn-ghost { --btn-bg: transparent; --btn-fg: var(--text-2); box-shadow: inset 0 0 0 1px var(--line-2); }
@@ -129,10 +179,14 @@ img, video { display: block; max-width: 100%; }
 
 /* --- panels ---------------------------------------------------------------------------- */
 .panel {
-  position: relative; background: var(--surface);
+  position: relative;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.055), rgb(255 255 255 / 0.015) 45%), rgb(16 20 26 / 0.78);
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
   clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
 }
-.panel-line { box-shadow: inset 0 0 0 1px var(--line-2); }
+.panel-line { box-shadow: inset 0 0 0 1px var(--line-2), inset 0 1px 0 rgb(255 255 255 / 0.08); }
+/* Thin accent line along the top edge of a panel */
+.panel-top::before { content: ''; position: absolute; left: 0; right: var(--cut); top: 0; height: 1px; background: linear-gradient(90deg, var(--accent), transparent); }
 .accent-bar { position: absolute; left: 0; top: 0; width: 3px; height: 100%; background: var(--accent); }
 
 /* Corner brackets: put .brackets on a positioned element, four <i> children are drawn */

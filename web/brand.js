@@ -16,6 +16,7 @@ window.brandReady = (async () => {
   root.setProperty('--accent-ink', 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#120c00' : '#ffffff');
   for (const el of document.querySelectorAll('[data-brand-name]')) el.textContent = brand.name;
   for (const el of document.querySelectorAll('[data-brand-tagline]')) el.textContent = brand.tagline;
+  if (brand.bgUrl) root.setProperty('--brand-bg', `url("${encodeURI(brand.bgUrl)}")`);
   if (brand.logoUrl) {
     for (const mark of document.querySelectorAll('.brand-mark')) {
       const img = new Image();

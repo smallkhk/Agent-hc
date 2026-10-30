@@ -20,6 +20,9 @@
     <symbol id="i-data" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></g></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></g></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></g></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke-linecap="round"/></g></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9M4 13a8 8 0 0 0 14.3 4.9"/><path d="M5 3v4h4M19 21v-4h-4"/></g></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></g></symbol>
   </svg>
 
@@ -32,21 +35,27 @@
       </header>
 
       <section class="hero">
+        <div class="radar hero-radar" aria-hidden="true"><i></i><i></i><i></i></div>
         <p class="label">Hand cam check</p>
         <h1 class="display" id="hello">Go live</h1>
         <p class="lead">Your lobby needs to see your hands and your whole game screen while you play.</p>
+        <ul class="trust">
+          <li><svg><use href="#i-shield"/></svg>Secure link</li>
+          <li><svg><use href="#i-eye"/></svg>AI monitored</li>
+          <li><svg><use href="#i-sync"/></svg>Auto-reconnect</li>
+        </ul>
       </section>
 
       <ol class="steps">
-        <li class="step panel">
+        <li class="step panel panel-top">
           <svg><use href="#i-device"/></svg>
           <div><b>Use a second device</b><span>Another phone, tablet or a laptop webcam. Not the one you play on.</span></div>
         </li>
-        <li class="step panel">
+        <li class="step panel panel-top">
           <svg><use href="#i-frame"/></svg>
           <div><b>Frame screen + hands</b><span>The whole game screen inside the brackets, with your hands visible.</span></div>
         </li>
-        <li class="step panel">
+        <li class="step panel panel-top">
           <svg><use href="#i-bolt"/></svg>
           <div><b>Keep it open</b><span>Plug the device in and leave this page on until the match ends.</span></div>
         </li>
@@ -61,9 +70,11 @@
         </div>
       </fieldset>
 
-      <button id="go" type="button" class="btn btn-primary btn-lg btn-block">
-        <span class="dot"></span> Go live
-      </button>
+      <div class="glow">
+        <button id="go" type="button" class="btn btn-primary btn-lg btn-block btn-shine">
+          <span class="dot"></span> Go live
+        </button>
+      </div>
       <p class="fine">Video is only used to check this match and is deleted after 7 days unless an admin flags it.</p>
     </div>
   </main>
@@ -109,7 +120,7 @@
   <main id="blocked" class="screen grid-bg" hidden>
     <div class="wrap center">
       <a class="brand" href="#"><span class="brand-mark"><svg><use href="#i-mark"/></svg></span><span class="brand-name" data-brand-name>HANDCAM</span></a>
-      <div class="blocked panel panel-line">
+      <div class="blocked panel panel-line panel-top">
         <span class="accent-bar"></span>
         <svg class="blocked-icon" id="blocked-icon"><use href="#i-alert"/></svg>
         <h1 class="display" id="error-title">Can't start</h1>

@@ -29,6 +29,7 @@ app.get('/api/brand', (_req, res) => {
     tagline: config.BRAND_TAGLINE,
     accent: config.BRAND_ACCENT,
     logoUrl: config.BRAND_LOGO_URL || null,
+    bgUrl: config.BRAND_BG_URL || null,
   });
 });
 app.use('/api/cam', camRouter);

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="admin.css">
 </head>
-<body>
+<body class="atmo">
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <symbol id="i-mark" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
     <symbol id="i-discord" viewBox="0 0 24 24"><path fill="currentColor" d="M19.6 5.3A16.6 16.6 0 0 0 15.5 4l-.5 1a15.3 15.3 0 0 0-6 0l-.5-1a16.6 16.6 0 0 0-4.1 1.3C1.8 9.2 1.1 13 1.4 16.8a16.7 16.7 0 0 0 5 2.6l1.1-1.7a10.8 10.8 0 0 1-1.7-.8l.4-.3a11.9 11.9 0 0 0 11.6 0l.4.3c-.5.3-1.1.6-1.7.8l1.1 1.7a16.6 16.6 0 0 0 5-2.6c.4-4.4-.7-8.2-3-11.5ZM8.7 14.5c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm6.6 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z"/></symbol>
@@ -27,13 +27,14 @@
 
   <!-- Login -->
   <section id="login" class="login grid-bg" hidden>
-    <div class="login-card panel panel-line">
+    <div class="radar login-radar" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="login-card panel panel-line panel-top">
       <span class="accent-bar"></span>
       <span class="brand-mark login-mark"><svg><use href="#i-mark"/></svg></span>
       <p class="label" data-brand-name>HANDCAM</p>
       <h1 class="display">Admin console</h1>
       <p class="muted">Watch every hand cam in your lobbies, review AI flags and make the call.</p>
-      <a class="btn btn-discord btn-lg btn-block" href="/auth/login"><svg><use href="#i-discord"/></svg>Log in with Discord</a>
+      <div class="glow-discord"><a class="btn btn-discord btn-lg btn-block btn-shine" href="/auth/login"><svg><use href="#i-discord"/></svg>Log in with Discord</a></div>
       <p class="fine">Only server admins (Manage Server or the hand cam admin role) can sign in.</p>
     </div>
   </section>
@@ -51,6 +52,14 @@
 
   <!-- Grid -->
   <main id="grid-wrap" class="main" hidden>
+    <section class="banner panel panel-line panel-top">
+      <div class="banner-text">
+        <p class="label" data-brand-tagline>Match integrity check</p>
+        <h1 class="display">Command center</h1>
+        <p class="muted" id="banner-sub">Every hand cam in your lobbies, checked by AI in real time.</p>
+      </div>
+      <div class="radar banner-radar" aria-hidden="true"><i></i><i></i><i></i></div>
+    </section>
     <nav class="tabs" id="tabs" aria-label="Filter">
       <button data-filter="all" class="tab active">All <span></span></button>
       <button data-filter="live" class="tab">Live <span></span></button>
