@@ -13,3 +13,4 @@ worker/models/*.json
 !worker/models/labels.json
 !worker/models/metrics.json
 .venv-train/
+/handcam-training-data.zip
