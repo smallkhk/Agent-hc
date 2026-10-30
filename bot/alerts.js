@@ -10,7 +10,14 @@ import {
   MessageFlags,
 } from 'discord.js';
 import { config } from '../api/config.js';
-import { alertMessageRef, CLIPS_CHANNEL, EVENTS_CHANNEL, rememberAlertMessage, subscribe } from '../api/lib/bus.js';
+import {
+  alertMessageRef,
+  CLIPS_CHANNEL,
+  EVENTS_CHANNEL,
+  LLM_CHANNEL,
+  rememberAlertMessage,
+  subscribe,
+} from '../api/lib/bus.js';
 import { getEvent } from '../api/lib/events.js';
 import { RESOLVED_CHANNEL, resolveAlert } from '../api/lib/resolve.js';
 import { getGuildConfig } from '../api/lib/guildConfig.js';
@@ -65,6 +72,7 @@ export async function alertMessage(e) {
       { name: 'When', value: `<t:${ts}:T> (<t:${ts}:R>)`, inline: true },
     )
     .setFooter({ text: `${e.type} · event ${e.id} · session ${e.sessionId}` });
+  if (e.llmVerdict) embed.addFields({ name: '🤖 AI second opinion', value: e.llmVerdict });
 
   const files = [];
   const frame = await storedFile(e.framePath);
@@ -121,6 +129,7 @@ export async function startAlerts(client) {
   };
   await subscribe(EVENTS_CHANNEL, handle('alert', postAlert));
   await subscribe(CLIPS_CHANNEL, handle('clip', postClip));
+  await subscribe(LLM_CHANNEL, handle('second opinion', addSecondOpinion));
   await subscribe(RESOLVED_CHANNEL, async (m) => {
     try {
       await markResolved(client, m);
@@ -128,6 +137,18 @@ export async function startAlerts(client) {
       console.error(`resolve update for event ${m.eventId} failed:`, err.message);
     }
   });
+}
+
+// The verdict usually lands a few seconds after the alert: add it to the posted embed.
+async function addSecondOpinion(client, eventId) {
+  const e = await getEvent(eventId);
+  const ref = e?.llmVerdict && (await alertMessageRef(eventId));
+  if (!ref) return;
+  const channel = await client.channels.fetch(ref.channelId);
+  const message = await channel?.messages.fetch(ref.messageId).catch(() => null);
+  if (!message || message.embeds[0]?.fields.some((f) => f.name.includes('second opinion'))) return;
+  const embed = EmbedBuilder.from(message.embeds[0]).addFields({ name: '🤖 AI second opinion', value: e.llmVerdict });
+  await message.edit({ embeds: [embed], allowedMentions: { parse: [] } });
 }
 
 // Resolved on the dashboard: take the buttons off the Discord alert too.

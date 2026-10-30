@@ -3,7 +3,7 @@ import { parse as parseCookies } from 'cookie';
 import { Server } from 'socket.io';
 import { pool } from '../db.js';
 import { COOKIE, decodeSession } from './adminAuth.js';
-import { CLIPS_CHANNEL, DASHBOARD_CHANNEL, SESSIONS_CHANNEL, subscribe } from './bus.js';
+import { CLIPS_CHANNEL, DASHBOARD_CHANNEL, LLM_CHANNEL, SESSIONS_CHANNEL, subscribe } from './bus.js';
 import { RESOLVED_CHANNEL } from './resolve.js';
 
 async function guildOfEvent(eventId) {
@@ -37,6 +37,7 @@ export async function startLive(httpServer) {
   };
   await subscribe(DASHBOARD_CHANNEL, forEvent('new'));
   await subscribe(CLIPS_CHANNEL, forEvent('clip'));
+  await subscribe(LLM_CHANNEL, forEvent('llm'));
   await subscribe(RESOLVED_CHANNEL, forEvent('resolved'));
   return io;
 }

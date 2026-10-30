@@ -4,7 +4,7 @@ import { pool } from '../db.js';
 export async function getEvent(eventId) {
   const [rows] = await pool.query(
     `SELECT e.id, e.type, e.severity, e.score, e.ts, e.frame_path AS framePath, e.clip_path AS clipPath,
-            e.admin_action AS adminAction, e.admin_id AS adminId,
+            e.admin_action AS adminAction, e.admin_id AS adminId, e.llm_verdict AS llmVerdict,
             s.id AS sessionId, s.discord_user_id AS discordUserId, s.match_label AS matchLabel,
             g.discord_guild_id AS discordGuildId
      FROM events e JOIN sessions s ON s.id = e.session_id JOIN guilds g ON g.id = s.guild_id

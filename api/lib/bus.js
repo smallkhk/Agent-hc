@@ -8,6 +8,8 @@ export const SESSIONS_CHANNEL = 'handcam:sessions';
 export const EVENTS_CHANNEL = 'handcam:events';
 // {eventId} for every stored event, info included (dashboard timeline).
 export const DASHBOARD_CHANNEL = 'handcam:dashboard';
+// {eventId} once the LLM second opinion is stored on the event.
+export const LLM_CHANNEL = 'handcam:llm';
 // {eventId} once the 20 s clip for an alert is cut.
 export const CLIPS_CHANNEL = 'handcam:clips';
 

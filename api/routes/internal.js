@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { config } from '../config.js';
 import { pool } from '../db.js';
-import { CLIPS_CHANNEL, DASHBOARD_CHANNEL, EVENTS_CHANNEL, isMuted, publish } from '../lib/bus.js';
+import { CLIPS_CHANNEL, DASHBOARD_CHANNEL, EVENTS_CHANNEL, isMuted, LLM_CHANNEL, publish } from '../lib/bus.js';
 import { getGuildConfig } from '../lib/guildConfig.js';
 import { roomName } from '../lib/livekit.js';
 import { hashMatches, sha256 } from '../lib/tokens.js';
@@ -158,6 +158,22 @@ internalRouter.post('/events/:id/clip', async (req, res, next) => {
     );
     if (!r.affectedRows) return res.status(404).json({ error: 'Unknown event.' });
     await publish({ eventId }, CLIPS_CHANNEL);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+const llmBody = z.object({ verdict: z.string().min(1).max(500) });
+
+internalRouter.post('/events/:id/llm', async (req, res, next) => {
+  const eventId = Number(req.params.id);
+  const body = llmBody.safeParse(req.body);
+  if (!Number.isInteger(eventId) || !body.success) return res.status(400).json({ error: 'Bad request.' });
+  try {
+    const [r] = await pool.query('UPDATE events SET llm_verdict = ? WHERE id = ?', [body.data.verdict, eventId]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Unknown event.' });
+    await publish({ eventId }, LLM_CHANNEL);
     res.status(204).end();
   } catch (err) {
     next(err);

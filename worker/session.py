@@ -20,6 +20,7 @@ from worker.config import Config
 from worker.detect import integrity
 from worker.detect import screen as screen_mod
 from worker.detect.menu import MenuClassifier, MenuRule, Prediction, flatten_screen
+from worker.llm import SecondOpinion
 from worker.record.recorder import Recorder, cut_clip, list_chunks
 from worker.rules import EscalatingRule, Event
 
@@ -61,7 +62,7 @@ def frame_to_bgr(frame: rtc.VideoFrame) -> np.ndarray:
 
 class SessionWatcher:
     def __init__(self, info: dict[str, Any], cfg: Config, client: ApiClient,
-                 menu: MenuClassifier | None = None) -> None:
+                 menu: MenuClassifier | None = None, llm: SecondOpinion | None = None) -> None:
         self.id: int = info["id"]
         self.room_name: str = info["room"]
         self.cfg = cfg
@@ -72,6 +73,7 @@ class SessionWatcher:
         self.freeze_rule = EscalatingRule(None, t["freezeSec"])
         self.drop_rule = EscalatingRule(None, t["dropSec"])
         self.menu = menu
+        self.llm = llm
         self.menu_rule = MenuRule(t["menuThreshold"])
         self.loop_rule = EscalatingRule(None, 0)  # one violation per looping episode
         self.scene_rule = EscalatingRule(0, None)  # one warning per change
@@ -92,7 +94,7 @@ class SessionWatcher:
         self.last_hint_at = 0.0
         self._stop = asyncio.Event()
         self._reader: asyncio.Task[None] | None = None
-        self._clips: set[asyncio.Task[None]] = set()  # strong refs until each clip is cut
+        self._clips: set[asyncio.Task[None]] = set()  # strong refs to clip / second-opinion tasks
 
     # --- lifecycle -------------------------------------------------------------------
 
@@ -302,8 +304,26 @@ class SessionWatcher:
     async def _emit_menu(self, pred: Prediction, flat: np.ndarray) -> None:
         # The flattened screen is the snapshot: it is what admins judge and what training uses.
         severity = "info" if self.cfg.menu_shadow else "violation"
-        await self._emit([Event(pred.label or pred.top, severity, round(pred.score, 3))], flat,
-                         save_frame=True, outline=False)
+        label = pred.label or pred.top
+        [event_id] = await self._emit([Event(label, severity, round(pred.score, 3))], flat,
+                                      save_frame=True, outline=False) or [None]
+        if event_id and self.llm and self.llm.allowed(self.id):
+            self._track(asyncio.create_task(self._second_opinion(event_id, flat, label, pred.score)))
+
+    async def _second_opinion(self, event_id: int, flat: np.ndarray, label: str, score: float) -> None:
+        assert self.llm
+        verdict = await self.llm.judge(flat, label, score)
+        if verdict is None:
+            return
+        log.info("session %s: second opinion on event %s: %s", self.id, event_id, verdict.verdict)
+        try:
+            await self.client.llm_verdict(event_id, verdict.text())
+        except Exception as err:  # noqa: BLE001
+            log.error("session %s: verdict for event %s not delivered: %s", self.id, event_id, err)
+
+    def _track(self, task: asyncio.Task[None]) -> None:
+        self._clips.add(task)  # strong ref until done
+        task.add_done_callback(self._clips.discard)
 
     def _screen_events(self, r: screen_mod.ScreenResult, now: float) -> list[Event]:
         glare = r.reason == screen_mod.GLARE
@@ -327,13 +347,14 @@ class SessionWatcher:
             log.debug("session %s: hint not sent: %s", self.id, err)
 
     async def _emit(self, events: list[Event], snapshot: np.ndarray | None, *,
-                    save_frame: bool = False, outline: bool = True) -> None:
+                    save_frame: bool = False, outline: bool = True) -> list[int]:
         ts_ms = int(time.time() * 1000)
         frame_path = None
         if snapshot is not None and (save_frame or any(e.severity != "info" for e in events)):
             frame_path = await asyncio.get_running_loop().run_in_executor(
                 None, self._save_frame, snapshot, ts_ms, events[0].type, outline
             )
+        created_ids: list[int] = []
         for e in events:
             body = {"sessionId": self.id, "type": e.type, "severity": e.severity, "score": e.score,
                     "ts": ts_ms, "framePath": frame_path}
@@ -343,10 +364,10 @@ class SessionWatcher:
             except Exception as err:  # noqa: BLE001
                 log.error("session %s: event %s not delivered: %s", self.id, e.type, err)
                 continue
+            created_ids.append(created["id"])
             if e.severity != "info" and not created.get("muted"):
-                task = asyncio.create_task(self._make_clip(created["id"], ts_ms, e.type))
-                self._clips.add(task)
-                task.add_done_callback(self._clips.discard)
+                self._track(asyncio.create_task(self._make_clip(created["id"], ts_ms, e.type)))
+        return created_ids
 
     def _save_frame(self, bgr: np.ndarray, ts_ms: int, event_type: str, outline: bool = True) -> str:
         rel = Path("frames") / str(self.id) / f"{ts_ms}_{event_type}.jpg"

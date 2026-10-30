@@ -34,6 +34,10 @@ class Config:
     loop_match_run: int
     menu_model: Path
     menu_shadow: bool
+    llm_enabled: bool
+    llm_api_key: str | None
+    llm_model: str
+    llm_min_interval_sec: float
     screen: ScreenParams
     poll_sec: float = 5.0
     heartbeat_sec: float = 10.0
@@ -55,6 +59,10 @@ def load() -> Config:
         menu_model=Path(_env("MENU_MODEL", str(Path(__file__).parent / "models" / "menu_classifier.onnx"))),
         # Shadow mode: menu flags are stored as info events (no alert) until the model is trusted.
         menu_shadow=_env("MENU_SHADOW", "true").lower() != "false",
+        llm_enabled=_env("LLM_SECOND_OPINION", "false").lower() == "true",
+        llm_api_key=os.environ.get("LLM_API_KEY") or None,
+        llm_model=_env("LLM_MODEL", "claude-opus-5-5"),
+        llm_min_interval_sec=_float("LLM_MIN_INTERVAL_SEC", 60),
         screen=ScreenParams(
             edge_margin_px=int(_float("EDGE_MARGIN_PX", 8)),
             min_area=_float("MIN_SCREEN_AREA", 0.15),

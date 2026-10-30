@@ -172,6 +172,7 @@
       <div class="ev-head"><span class="pill ${sev[0]}">${sev[1]}</span><strong>${esc(RULE_TEXT[e.type] || e.type)}${shadow}</strong>
         <span class="muted">${fmtTime(e.ts)}</span>${score}</div>
       ${mediaHtml ? `<div class="ev-media">${mediaHtml}</div>` : ''}
+      ${e.llmVerdict ? `<div class="muted">🤖 AI second opinion: ${esc(e.llmVerdict)}</div>` : ''}
       ${actions ? `<div class="ev-actions">${actions}</div>` : ''}
     </li>`;
   }

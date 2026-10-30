@@ -31,6 +31,9 @@ class ApiClient:
     async def event(self, body: dict[str, Any]) -> dict[str, Any]:
         return await self._request("POST", "/internal/events", body)
 
+    async def llm_verdict(self, event_id: int, verdict: str) -> None:
+        await self._request("POST", f"/internal/events/{event_id}/llm", {"verdict": verdict})
+
     async def clip(self, event_id: int, clip_path: str) -> None:
         await self._request("POST", f"/internal/events/{event_id}/clip", {"clipPath": clip_path})
 
