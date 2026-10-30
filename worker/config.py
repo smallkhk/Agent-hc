@@ -55,8 +55,9 @@ def _shard() -> tuple[int, int]:
 def load() -> Config:
     return Config(
         shard=_shard(),
-        # Same host as LiveKit: skip Nginx/TLS.
-        livekit_url=_env("LIVEKIT_INTERNAL_URL", "ws://127.0.0.1:7880"),
+        # LiveKit Cloud: the same wss:// URL players use. Self-hosted on this box: set
+        # LIVEKIT_INTERNAL_URL=ws://127.0.0.1:7880 to skip Nginx/TLS.
+        livekit_url=_env("LIVEKIT_INTERNAL_URL", os.environ.get("LIVEKIT_URL")),
         livekit_api_key=_env("LIVEKIT_API_KEY"),
         livekit_api_secret=_env("LIVEKIT_API_SECRET"),
         api_url=_env("API_INTERNAL_URL", f"http://127.0.0.1:{os.environ.get('PORT') or 3000}").rstrip("/"),

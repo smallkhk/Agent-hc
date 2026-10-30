@@ -3,14 +3,19 @@
 AI-assisted hand cam monitoring for Call of Duty: Mobile lobbies, run through Discord. Full spec: [CLAUDE.md](CLAUDE.md).
 
 Discord bots can't watch voice-channel video, so players open a one-time cam link (sent by the bot) on a second device.
-That page streams to the self-hosted LiveKit server, where admins watch and the vision worker analyses the feed.
+That page streams through LiveKit Cloud to your server, where admins watch and the vision worker analyses the feed.
+Players only use a browser: nothing to install.
 
 ## Setup
 
-1. **Server:** Ubuntu with Docker, Node 20.12+, Python 3.11, FFmpeg, MySQL 8, Nginx. Open UDP 50000–60000 and TCP 7881 for LiveKit media.
+1. **Server:** Ubuntu with Docker, Node 20.12+, Python 3.11, FFmpeg, MySQL 8, Nginx. Only ports 80/443 need to be open.
+   **LiveKit Cloud:** sign up at [cloud.livekit.io](https://cloud.livekit.io), create a project, and copy its URL, API key and
+   secret into `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`. The free plan (5,000 minutes, 50 GB a month)
+   covers about 80 one-player or 40 two-player 30-minute matches.
 2. `cp .env.example .env` and fill it in (`WORKER_SECRET`: `openssl rand -hex 32`). `npm ci`, then `npm run db:migrate`.
    Vision worker: `python3.11 -m venv .venv && .venv/bin/pip install -r worker/requirements.txt`.
-3. `cd deploy && docker compose --env-file ../.env up -d` (LiveKit + Redis).
+3. `cd deploy && docker compose --env-file ../.env up -d` (Redis). Running your own LiveKit server instead of the
+   cloud: add `--profile selfhosted`, use `deploy/nginx/livekit-selfhosted.conf`, and open UDP 50000–60000 + TCP 7881.
 4. Nginx: copy `deploy/nginx/handcam.conf`, replace the domains, run certbot.
 5. **Discord app** ([Developer Portal](https://discord.com/developers/applications)):
    - Bot tab: copy the token into `DISCORD_TOKEN`. Application ID → `DISCORD_CLIENT_ID`.

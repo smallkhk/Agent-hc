@@ -1,5 +1,7 @@
-# LiveKit + Redis. Run from /deploy: docker compose --env-file ../.env up -d
-# Host networking so LiveKit can use the UDP media port range directly.
+# Redis (always). Run from /deploy: docker compose --env-file ../.env up -d
+# Video goes through LiveKit Cloud by default. To run your own LiveKit server instead:
+#   docker compose --env-file ../.env --profile selfhosted up -d   (and see nginx/livekit-selfhosted.conf)
+# Host networking so a self-hosted LiveKit can use the UDP media port range directly.
 services:
   redis:
     image: redis:7-alpine
@@ -10,6 +12,7 @@ services:
     restart: unless-stopped
 
   livekit:
+    profiles: ["selfhosted"]
     image: livekit/livekit-server:v1.13
     command: ["--config", "/etc/livekit.yaml"]
     network_mode: host
