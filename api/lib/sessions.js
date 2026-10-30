@@ -25,13 +25,13 @@ export async function ensureGuild(discordGuildId) {
 const camUrl = (token) => `${config.PUBLIC_URL}/cam.html#t=${token}`;
 
 // Creates a pending session and returns its one-time cam link.
-export async function createSession({ discordGuildId, discordUserId, matchLabel = null }) {
+export async function createSession({ discordGuildId, discordUserId, playerName = null, matchLabel = null }) {
   const guildId = await ensureGuild(discordGuildId);
   const token = randomToken();
   const [res] = await pool.query(
-    `INSERT INTO sessions (guild_id, discord_user_id, match_label, token_hash, token_expires_at)
-     VALUES (?, ?, ?, ?, UTC_TIMESTAMP(3) + INTERVAL ? MINUTE)`,
-    [guildId, discordUserId, matchLabel, sha256(token), config.CAM_LINK_TTL_MIN],
+    `INSERT INTO sessions (guild_id, discord_user_id, player_name, match_label, token_hash, token_expires_at)
+     VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP(3) + INTERVAL ? MINUTE)`,
+    [guildId, discordUserId, playerName, matchLabel, sha256(token), config.CAM_LINK_TTL_MIN],
   );
   return { sessionId: res.insertId, camUrl: camUrl(token) };
 }
@@ -48,7 +48,8 @@ export async function reissueCamLink(sessionId) {
   return res.affectedRows ? camUrl(token) : null;
 }
 
-const SESSION_COLUMNS = `s.id, s.status, s.match_label AS matchLabel, s.discord_user_id AS discordUserId,
+export const SESSION_COLUMNS = `s.id, s.status, s.match_label AS matchLabel, s.discord_user_id AS discordUserId,
+  s.player_name AS playerName,
   g.discord_guild_id AS discordGuildId, s.token_used_at IS NOT NULL AS linkOpened,
   s.started_at AS startedAt, s.ended_at AS endedAt, s.uptime_sec AS uptimeSec,
   s.data_bytes AS dataBytes`;

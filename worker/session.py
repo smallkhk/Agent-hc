@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -271,12 +272,27 @@ class SessionWatcher:
         except Exception as err:  # noqa: BLE001
             log.error("session %s: clip for event %s not delivered: %s", self.id, event_id, err)
 
+    def _save_thumb(self, bgr: np.ndarray) -> None:
+        """Dashboard grid image, replaced atomically so a reader never sees half a JPEG."""
+        path = self.cfg.storage_dir / "thumbs" / f"{self.id}.jpg"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        h, w = bgr.shape[:2]
+        small = cv2.resize(bgr, (320, max(1, round(h * 320 / w))), interpolation=cv2.INTER_AREA)
+        tmp = path.with_suffix(".tmp")
+        ok, buf = cv2.imencode(".jpg", small, [cv2.IMWRITE_JPEG_QUALITY, 70])
+        if ok:
+            tmp.write_bytes(buf.tobytes())
+            os.replace(tmp, path)
+
     def _analyse(
         self, bgr: np.ndarray
     ) -> tuple[screen_mod.ScreenResult, float, bool, bool, np.ndarray | None, Prediction | None]:
+        self._save_thumb(bgr)
         result = screen_mod.detect_screen(bgr, self.cfg.screen)
         corners = self.smoother.update(result.corners)
-        scene_changed = self.scene.update(bgr, corners)
+        # Only compare backgrounds while the screen is properly in frame: a screen sliding out of
+        # frame shifts the background too, and the screen rule already reports that.
+        scene_changed = self.scene.update(bgr, corners) if result.ok else False
         flat = pred = None
         if self.menu and result.ok and corners is not None:  # classify only a readable screen
             flat = flatten_screen(bgr, corners)

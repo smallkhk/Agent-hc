@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { config } from '../config.js';
 import { pool } from '../db.js';
-import { CLIPS_CHANNEL, EVENTS_CHANNEL, isMuted, publish } from '../lib/bus.js';
+import { CLIPS_CHANNEL, DASHBOARD_CHANNEL, EVENTS_CHANNEL, isMuted, publish } from '../lib/bus.js';
 import { getGuildConfig } from '../lib/guildConfig.js';
 import { roomName } from '../lib/livekit.js';
 import { hashMatches, sha256 } from '../lib/tokens.js';
@@ -137,6 +137,7 @@ internalRouter.post('/events', async (req, res, next) => {
       [e.sessionId, e.type, e.severity, e.score ?? null, e.ts, e.framePath ?? null, muted ? 'ignored' : null],
     );
     if (alert && !muted) await publish({ eventId: ins.insertId }, EVENTS_CHANNEL);
+    await publish({ eventId: ins.insertId }, DASHBOARD_CHANNEL);
     res.status(201).json({ id: ins.insertId, muted });
   } catch (err) {
     next(err);

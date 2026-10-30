@@ -12,6 +12,12 @@ const schema = z.object({
   WORKER_SECRET: z.string().min(32),
   STORAGE_DIR: z.string().min(1).default('/var/handcam/recordings'),
   RETENTION_DAYS: z.coerce.number().int().positive().default(7),
+  // Admin dashboard (Discord OAuth). Dashboard is off until all three are set.
+  DISCORD_CLIENT_ID: z.string().optional(),
+  DISCORD_CLIENT_SECRET: z.string().optional(),
+  DISCORD_TOKEN: z.string().optional(), // bot token: checks the admin role on login
+  SESSION_SECRET: z.string().min(32).optional(),
+  DISCORD_API_URL: z.url().default('https://discord.com/api/v10'),
   DEFAULT_CAM_RES: z.enum(['360p', '480p', '720p']).default('480p'),
   CAM_LINK_TTL_MIN: z.coerce.number().int().positive().default(30),
 });

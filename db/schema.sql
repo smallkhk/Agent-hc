@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   id                BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   guild_id          BIGINT UNSIGNED NOT NULL,
   discord_user_id   VARCHAR(20)  NOT NULL,
+  player_name       VARCHAR(100) NULL,               -- Discord display name when the session started
   match_label       VARCHAR(100) NULL,
   status            ENUM('pending','live','stale','ended') NOT NULL DEFAULT 'pending',
   token_hash        CHAR(64)     NOT NULL,           -- sha256 of the one-time cam link token

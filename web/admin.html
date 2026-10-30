@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Hand Cam Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <section id="login" class="center" hidden>
+    <h1>Hand Cam Admin</h1>
+    <p>Log in with the Discord account you use to run lobbies.</p>
+    <a class="button primary" href="/auth/login">Log in with Discord</a>
+  </section>
+
+  <header id="top" class="top" hidden>
+    <strong class="brand">Hand Cam</strong>
+    <select id="guild" aria-label="Server"></select>
+    <span class="counts" id="counts"></span>
+    <span class="spacer"></span>
+    <span id="me" class="muted"></span>
+    <a href="/auth/logout" class="muted">Log out</a>
+  </header>
+
+  <main id="grid-wrap" hidden>
+    <div id="grid" class="grid"></div>
+    <p id="empty" class="muted center" hidden>No hand cams in this server right now. Start one with <code>/handcam start</code>.</p>
+  </main>
+
+  <aside id="detail" class="detail" hidden aria-label="Session">
+    <header class="detail-head">
+      <button id="close" class="icon" aria-label="Close">✕</button>
+      <div>
+        <h2 id="d-name"></h2>
+        <div id="d-meta" class="muted"></div>
+      </div>
+      <span class="spacer"></span>
+      <button id="d-watch" class="button">Watch live</button>
+      <button id="d-stop" class="button danger">End session</button>
+    </header>
+    <div class="detail-body">
+      <div class="live" id="live" hidden>
+        <video id="d-video" autoplay muted playsinline></video>
+        <span id="d-live-state" class="pill">Connecting…</span>
+      </div>
+      <div class="section-head">
+        <h3>Timeline</h3>
+        <label class="muted"><input type="checkbox" id="show-info"> show info / shadow events</label>
+      </div>
+      <ol id="timeline" class="timeline"></ol>
+      <h3>Recordings</h3>
+      <ul id="recordings" class="recordings"></ul>
+    </div>
+  </aside>
+
+  <script src="/vendor/socket.io.min.js"></script>
+  <script src="/vendor/livekit-client.umd.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -64,4 +64,17 @@ Retention runs hourly in the API:
 
 Worker tests (need `ffmpeg`): `.venv/bin/pip install pytest && .venv/bin/python -m pytest worker/tests`.
 
+## Admin dashboard
+
+`https://<PUBLIC_URL>/admin.html`: log in with Discord. You see the servers where you have **Manage Server** or the
+`/handcam config admin_role`.
+
+- Grid of every hand cam with a thumbnail refreshed each second, status badge and alert count.
+- Click a player: live video, timeline of alerts with snapshots and clips, recordings, **Confirm / False positive /
+  Ignore 10m** (the Discord alert is updated too) and **End session**.
+- Updates arrive live (Socket.IO); `show info / shadow events` reveals reconnects and shadow-mode menu flags.
+
+Setup: in the Developer Portal → OAuth2, add the redirect `https://<PUBLIC_URL>/auth/callback`; set
+`DISCORD_CLIENT_SECRET` and `SESSION_SECRET` (`openssl rand -hex 32`). The dashboard stays off until both are set.
+
 Without the bot: `npm run cli -- new --guild <id> --user <id>` prints a cam link, `npm run cli -- watch --session <id>` a 1-hour watch link.

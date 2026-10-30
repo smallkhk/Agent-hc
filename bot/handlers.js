@@ -40,7 +40,12 @@ async function startFor(guild, user, matchLabel) {
   let camUrl = existing && (await reissueCamLink(existing.id));
   const state = camUrl ? 'reissued' : 'started';
   if (!camUrl) {
-    ({ camUrl } = await createSession({ discordGuildId: guild.id, discordUserId: user.id, matchLabel }));
+    ({ camUrl } = await createSession({
+      discordGuildId: guild.id,
+      discordUserId: user.id,
+      playerName: user.globalName ?? user.username,
+      matchLabel,
+    }));
   }
   const message = camLinkMessage({
     guildName: guild.name,
@@ -82,7 +87,11 @@ async function join(interaction) {
   if (!camUrl) {
     const cfg = await getGuildConfig(interaction.guildId);
     if (!cfg.selfJoin) throw new UserError('Self-start is off on this server. Ask an admin to start your hand cam.');
-    ({ camUrl } = await createSession({ discordGuildId: interaction.guildId, discordUserId: interaction.user.id }));
+    ({ camUrl } = await createSession({
+      discordGuildId: interaction.guildId,
+      discordUserId: interaction.user.id,
+      playerName: interaction.user.globalName ?? interaction.user.username,
+    }));
   }
   await interaction.reply({
     ...camLinkMessage({

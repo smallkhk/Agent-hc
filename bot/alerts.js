@@ -10,19 +10,12 @@ import {
   MessageFlags,
 } from 'discord.js';
 import { config } from '../api/config.js';
-import {
-  alertMessageRef,
-  CLIPS_CHANNEL,
-  EVENTS_CHANNEL,
-  mute,
-  rememberAlertMessage,
-  subscribe,
-} from '../api/lib/bus.js';
-import { getEvent, resolveEvent } from '../api/lib/events.js';
+import { alertMessageRef, CLIPS_CHANNEL, EVENTS_CHANNEL, rememberAlertMessage, subscribe } from '../api/lib/bus.js';
+import { getEvent } from '../api/lib/events.js';
+import { RESOLVED_CHANNEL, resolveAlert } from '../api/lib/resolve.js';
 import { getGuildConfig } from '../api/lib/guildConfig.js';
 import { COLORS } from './embeds.js';
 
-const IGNORE_SEC = 600;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // Discord's limit for bots in unboosted servers
 
 export const RULE_TEXT = {
@@ -40,11 +33,17 @@ export const RULE_TEXT = {
   unknown_overlay: 'Unknown overlay on screen',
 };
 
-const ACTIONS = {
-  confirm: { action: 'confirmed', text: '✅ Confirmed' },
-  fp: { action: 'false_positive', text: '👍 False positive' },
-  ignore: { action: 'ignored', text: '🔕 Ignored for 10 min' },
+const RESOLVED_TEXT = {
+  confirmed: '✅ Confirmed',
+  false_positive: '👍 False positive',
+  ignored: '🔕 Ignored for 10 min',
 };
+
+function resolvedEmbed(message, action, adminId, via = '') {
+  return EmbedBuilder.from(message.embeds[0])
+    .setColor(action === 'confirmed' ? COLORS.bad : COLORS.idle)
+    .addFields({ name: 'Resolved', value: `${RESOLVED_TEXT[action]} by <@${adminId}>${via}` });
+}
 
 async function storedFile(rel) {
   if (!rel) return null;
@@ -122,32 +121,51 @@ export async function startAlerts(client) {
   };
   await subscribe(EVENTS_CHANNEL, handle('alert', postAlert));
   await subscribe(CLIPS_CHANNEL, handle('clip', postClip));
+  await subscribe(RESOLVED_CHANNEL, async (m) => {
+    try {
+      await markResolved(client, m);
+    } catch (err) {
+      console.error(`resolve update for event ${m.eventId} failed:`, err.message);
+    }
+  });
+}
+
+// Resolved on the dashboard: take the buttons off the Discord alert too.
+async function markResolved(client, { eventId, action, adminId }) {
+  const ref = await alertMessageRef(eventId);
+  if (!ref) return;
+  const channel = await client.channels.fetch(ref.channelId);
+  const message = await channel?.messages.fetch(ref.messageId).catch(() => null);
+  if (!message) return;
+  await message.edit({
+    embeds: [resolvedEmbed(message, action, adminId, ' (dashboard)')],
+    components: [],
+    allowedMentions: { parse: [] },
+  });
 }
 
 // customId: hc:<confirm|fp|ignore>:<eventId>. isAdmin is the same check as admin commands.
 export async function handleAlertButton(interaction, isAdmin) {
   const [, key, id] = interaction.customId.split(':');
-  const choice = ACTIONS[key];
   const eventId = Number(id);
-  if (!choice || !Number.isInteger(eventId)) return;
+  if (!['confirm', 'fp', 'ignore'].includes(key) || !Number.isInteger(eventId)) return;
   if (!(await isAdmin(interaction))) {
     return interaction.reply({ content: 'Only admins can resolve alerts.', flags: MessageFlags.Ephemeral });
   }
   const e = await getEvent(eventId);
   if (!e || e.discordGuildId !== interaction.guildId) return;
 
-  if (!(await resolveEvent(eventId, choice.action, interaction.user.id))) {
-    const done = await getEvent(eventId);
+  const { ok, event } = await resolveAlert(eventId, key, interaction.user.id, { source: 'discord' });
+  if (!ok) {
     return interaction.reply({
-      content: `Already resolved (${done.adminAction}) by <@${done.adminId}>.`,
+      content: `Already resolved (${event.adminAction}) by <@${event.adminId}>.`,
       flags: MessageFlags.Ephemeral,
       allowedMentions: { parse: [] },
     });
   }
-  if (choice.action === 'ignored') await mute(e.sessionId, e.type, IGNORE_SEC);
-
-  const embed = EmbedBuilder.from(interaction.message.embeds[0])
-    .setColor(choice.action === 'confirmed' ? COLORS.bad : COLORS.idle)
-    .addFields({ name: 'Resolved', value: `${choice.text} by <@${interaction.user.id}>` });
-  await interaction.update({ embeds: [embed], components: [], allowedMentions: { parse: [] } });
+  await interaction.update({
+    embeds: [resolvedEmbed(interaction.message, event.adminAction, interaction.user.id)],
+    components: [],
+    allowedMentions: { parse: [] },
+  });
 }

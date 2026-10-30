@@ -6,6 +6,8 @@ import { config } from '../config.js';
 export const SESSIONS_CHANNEL = 'handcam:sessions';
 // {eventId} for each warning/violation that should alert admins.
 export const EVENTS_CHANNEL = 'handcam:events';
+// {eventId} for every stored event, info included (dashboard timeline).
+export const DASHBOARD_CHANNEL = 'handcam:dashboard';
 // {eventId} once the 20 s clip for an alert is cut.
 export const CLIPS_CHANNEL = 'handcam:clips';
 
