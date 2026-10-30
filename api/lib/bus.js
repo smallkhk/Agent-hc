@@ -6,6 +6,8 @@ import { config } from '../config.js';
 export const SESSIONS_CHANNEL = 'handcam:sessions';
 // {eventId} for each warning/violation that should alert admins.
 export const EVENTS_CHANNEL = 'handcam:events';
+// {eventId} once the 20 s clip for an alert is cut.
+export const CLIPS_CHANNEL = 'handcam:clips';
 
 let client = null;
 
@@ -55,4 +57,20 @@ export async function isMuted(sessionId, type) {
   } catch {
     return false; // fail open: better a duplicate alert than a missed one
   }
+}
+
+// Discord message that carries an event's alert, so the clip can be posted as a reply.
+const alertKey = (eventId) => `handcam:alertmsg:${eventId}`;
+
+export async function rememberAlertMessage(eventId, channelId, messageId) {
+  if (!config.REDIS_URL) return;
+  await (await connect()).set(alertKey(eventId), `${channelId}:${messageId}`, { EX: 7 * 24 * 3600 });
+}
+
+export async function alertMessageRef(eventId) {
+  if (!config.REDIS_URL) return null;
+  const v = await (await connect()).get(alertKey(eventId));
+  if (!v) return null;
+  const [channelId, messageId] = v.split(':');
+  return { channelId, messageId };
 }

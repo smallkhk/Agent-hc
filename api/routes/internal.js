@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { config } from '../config.js';
 import { pool } from '../db.js';
-import { EVENTS_CHANNEL, isMuted, publish } from '../lib/bus.js';
+import { CLIPS_CHANNEL, EVENTS_CHANNEL, isMuted, publish } from '../lib/bus.js';
 import { getGuildConfig } from '../lib/guildConfig.js';
 import { roomName } from '../lib/livekit.js';
 import { hashMatches, sha256 } from '../lib/tokens.js';
@@ -54,6 +54,18 @@ const heartbeatBody = z.object({
         id: z.number().int().positive(),
         connected: z.boolean(),
         uptimeDeltaSec: z.number().min(0).max(120),
+        chunks: z
+          .array(
+            z.object({
+              path: z.string().regex(/^recordings\/\d+\/\d{8}T\d{6}Z\.mp4$/),
+              startedAt: z.number().int().positive(),
+              endedAt: z.number().int().positive(),
+              sizeBytes: z.number().int().nonnegative(),
+              active: z.boolean(),
+            }),
+          )
+          .max(1000)
+          .default([]),
       }),
     )
     .max(500),
@@ -71,6 +83,17 @@ internalRouter.post('/heartbeat', async (req, res, next) => {
         [s.id],
       );
       const { status, ...who } = rows[0] ?? {};
+      if (!status) continue;
+      // Chunks are recorded even after the session ended (the worker's final report).
+      for (const c of s.chunks) {
+        if (!c.path.startsWith(`recordings/${s.id}/`)) continue;
+        await pool.query(
+          `INSERT INTO recordings (session_id, path, started_at, ended_at, size_bytes)
+           VALUES (?, ?, FROM_UNIXTIME(? / 1000), ?, ?)
+           ON DUPLICATE KEY UPDATE ended_at = VALUES(ended_at), size_bytes = VALUES(size_bytes)`,
+          [s.id, c.path, c.startedAt, c.active ? null : new Date(c.endedAt), c.sizeBytes],
+        );
+      }
       if (status !== 'live' && status !== 'stale') continue;
       await pool.query(
         `UPDATE sessions SET last_heartbeat_at = UTC_TIMESTAMP(3), uptime_sec = uptime_sec + ?, status = 'live'
@@ -115,6 +138,26 @@ internalRouter.post('/events', async (req, res, next) => {
     );
     if (alert && !muted) await publish({ eventId: ins.insertId }, EVENTS_CHANNEL);
     res.status(201).json({ id: ins.insertId, muted });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const clipBody = z.object({ clipPath: z.string().regex(/^clips\/\d+\/[\w.-]+\.mp4$/) });
+
+internalRouter.post('/events/:id/clip', async (req, res, next) => {
+  const eventId = Number(req.params.id);
+  const body = clipBody.safeParse(req.body);
+  if (!Number.isInteger(eventId) || !body.success) return res.status(400).json({ error: 'Bad request.' });
+  try {
+    const [r] = await pool.query(
+      `UPDATE events e SET e.clip_path = ?
+       WHERE e.id = ? AND ? LIKE CONCAT('clips/', e.session_id, '/%')`,
+      [body.data.clipPath, eventId, body.data.clipPath],
+    );
+    if (!r.affectedRows) return res.status(404).json({ error: 'Unknown event.' });
+    await publish({ eventId }, CLIPS_CHANNEL);
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

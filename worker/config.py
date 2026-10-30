@@ -29,6 +29,7 @@ class Config:
     worker_secret: str
     storage_dir: Path
     sample_fps: float
+    record_fps: float
     freeze_diff: float
     screen: ScreenParams
     poll_sec: float = 5.0
@@ -45,6 +46,7 @@ def load() -> Config:
         worker_secret=_env("WORKER_SECRET"),
         storage_dir=Path(_env("STORAGE_DIR")),
         sample_fps=_float("SAMPLE_FPS", 2),
+        record_fps=_float("RECORD_FPS", 15),
         freeze_diff=_float("FREEZE_DIFF", 0.3),
         screen=ScreenParams(
             edge_margin_px=int(_float("EDGE_MARGIN_PX", 8)),

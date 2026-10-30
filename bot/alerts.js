@@ -1,6 +1,6 @@
 // Posts worker alerts to the guild's alert channel and handles the admin buttons.
 import path from 'node:path';
-import { access } from 'node:fs/promises';
+import { access, stat } from 'node:fs/promises';
 import {
   ActionRowBuilder,
   AttachmentBuilder,
@@ -10,12 +10,20 @@ import {
   MessageFlags,
 } from 'discord.js';
 import { config } from '../api/config.js';
-import { EVENTS_CHANNEL, mute, subscribe } from '../api/lib/bus.js';
+import {
+  alertMessageRef,
+  CLIPS_CHANNEL,
+  EVENTS_CHANNEL,
+  mute,
+  rememberAlertMessage,
+  subscribe,
+} from '../api/lib/bus.js';
 import { getEvent, resolveEvent } from '../api/lib/events.js';
 import { getGuildConfig } from '../api/lib/guildConfig.js';
 import { COLORS } from './embeds.js';
 
 const IGNORE_SEC = 600;
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // Discord's limit for bots in unboosted servers
 
 export const RULE_TEXT = {
   SCREEN_CUT_OFF: 'Screen partly out of frame',
@@ -38,7 +46,7 @@ const ACTIONS = {
   ignore: { action: 'ignored', text: '🔕 Ignored for 10 min' },
 };
 
-async function framePathOnDisk(rel) {
+async function storedFile(rel) {
   if (!rel) return null;
   const root = path.resolve(config.STORAGE_DIR);
   const full = path.resolve(root, rel);
@@ -58,10 +66,9 @@ export async function alertMessage(e) {
       { name: 'When', value: `<t:${ts}:T> (<t:${ts}:R>)`, inline: true },
     )
     .setFooter({ text: `${e.type} · event ${e.id} · session ${e.sessionId}` });
-  if (e.clipPath) embed.addFields({ name: 'Clip', value: e.clipPath });
 
   const files = [];
-  const frame = await framePathOnDisk(e.framePath);
+  const frame = await storedFile(e.framePath);
   if (frame) {
     files.push(new AttachmentBuilder(frame, { name: 'frame.jpg' }));
     embed.setImage('attachment://frame.jpg');
@@ -74,19 +81,47 @@ export async function alertMessage(e) {
   return { embeds: [embed], components: [row], files, allowedMentions: { parse: [] } };
 }
 
-export async function startAlerts(client) {
-  return subscribe(EVENTS_CHANNEL, async ({ eventId }) => {
-    try {
-      const e = await getEvent(eventId);
-      if (!e) return;
-      const { alertChannelId } = await getGuildConfig(e.discordGuildId);
-      if (!alertChannelId) return;
-      const channel = await client.channels.fetch(alertChannelId);
-      await channel?.send(await alertMessage(e));
-    } catch (err) {
-      console.error(`alert for event ${eventId} failed:`, err.message);
-    }
+async function postAlert(client, eventId) {
+  const e = await getEvent(eventId);
+  if (!e) return;
+  const { alertChannelId } = await getGuildConfig(e.discordGuildId);
+  if (!alertChannelId) return;
+  const channel = await client.channels.fetch(alertChannelId);
+  const message = await channel?.send(await alertMessage(e));
+  if (message) await rememberAlertMessage(e.id, channel.id, message.id);
+}
+
+// The 20 s clip is cut ~13 s after the alert; it goes in as a reply so the alert isn't held back.
+async function postClip(client, eventId) {
+  const e = await getEvent(eventId);
+  const ref = e && (await alertMessageRef(e.id));
+  const clip = ref && (await storedFile(e.clipPath));
+  if (!clip) return;
+  const channel = await client.channels.fetch(ref.channelId);
+  const alert = await channel?.messages.fetch(ref.messageId).catch(() => null);
+  if (!alert) return;
+  const { size } = await stat(clip);
+  if (size > MAX_UPLOAD_BYTES) {
+    await alert.reply({ content: `🎬 Clip saved (${(size / 1e6).toFixed(1)} MB, too big for Discord): \`${e.clipPath}\`` });
+    return;
+  }
+  await alert.reply({
+    content: '🎬 20 s clip (10 s before, 10 s after)',
+    files: [new AttachmentBuilder(clip, { name: `event-${e.id}.mp4` })],
+    allowedMentions: { parse: [] },
   });
+}
+
+export async function startAlerts(client) {
+  const handle = (what, fn) => async ({ eventId }) => {
+    try {
+      await fn(client, eventId);
+    } catch (err) {
+      console.error(`${what} for event ${eventId} failed:`, err.message);
+    }
+  };
+  await subscribe(EVENTS_CHANNEL, handle('alert', postAlert));
+  await subscribe(CLIPS_CHANNEL, handle('clip', postClip));
 }
 
 // customId: hc:<confirm|fp|ignore>:<eventId>. isAdmin is the same check as admin commands.

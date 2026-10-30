@@ -7,7 +7,7 @@ That page streams to the self-hosted LiveKit server, where admins watch and the 
 
 ## Setup
 
-1. **Server:** Ubuntu with Docker, Node 20.12+, MySQL 8, Nginx. Open UDP 50000–60000 and TCP 7881 for LiveKit media.
+1. **Server:** Ubuntu with Docker, Node 20.12+, Python 3.11, FFmpeg, MySQL 8, Nginx. Open UDP 50000–60000 and TCP 7881 for LiveKit media.
 2. `cp .env.example .env` and fill it in (`WORKER_SECRET`: `openssl rand -hex 32`). `npm ci`, then `npm run db:migrate`.
    Vision worker: `python3.11 -m venv .venv && .venv/bin/pip install -r worker/requirements.txt`.
 3. `cd deploy && docker compose --env-file ../.env up -d` (LiveKit + Redis).
@@ -48,6 +48,17 @@ The vision worker checks every live cam twice a second and posts to the alert ch
 Each alert has the snapshot and **Confirm / False positive / Ignore 10m** buttons (admins only; first click wins).
 Confirm and False positive are saved as training labels. The player's cam page shows what is wrong in the guide box.
 
-Worker tests: `.venv/bin/pip install pytest && .venv/bin/python -m pytest worker/tests`.
+## Recordings
+
+Every session is recorded under `STORAGE_DIR/recordings/<session>/` in 10-minute MP4 chunks (H.264, stream resolution,
+about 25–60 MB/hour at 480p). Chunks are written as they go, so a crash or restart loses only the last few seconds.
+About 13 s after an alert, a 20 s clip (10 s before, 10 s after) is posted as a reply to the alert in Discord.
+
+Retention runs hourly in the API:
+- recording chunks are deleted after `RETENTION_DAYS` (7) unless they cover an alert nobody has resolved yet;
+- clips and snapshots of false positives / ignored alerts are deleted after `RETENTION_DAYS`;
+- clips and snapshots of **confirmed** alerts are kept, and so are snapshots saved as training samples.
+
+Worker tests (need `ffmpeg`): `.venv/bin/pip install pytest && .venv/bin/python -m pytest worker/tests`.
 
 Without the bot: `npm run cli -- new --guild <id> --user <id>` prints a cam link, `npm run cli -- watch --session <id>` a 1-hour watch link.

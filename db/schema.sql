@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS events (
   admin_id     VARCHAR(20)  NULL,
   resolved_at  DATETIME(3)  NULL,
   KEY ix_events_session_ts (session_id, ts),
+  KEY ix_events_retention (ts, admin_action),
   KEY ix_events_unresolved (admin_action, severity),
   CONSTRAINT fk_events_session FOREIGN KEY (session_id) REFERENCES sessions(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -57,6 +58,7 @@ CREATE TABLE IF NOT EXISTS recordings (
   ended_at    DATETIME(3)  NULL,
   size_bytes  BIGINT UNSIGNED NOT NULL DEFAULT 0,
   keep        BOOLEAN      NOT NULL DEFAULT FALSE,   -- true while a flagged event is unresolved
+  UNIQUE KEY uq_recordings_path (path),
   KEY ix_recordings_session (session_id),
   KEY ix_recordings_retention (keep, started_at),
   CONSTRAINT fk_recordings_session FOREIGN KEY (session_id) REFERENCES sessions(id)

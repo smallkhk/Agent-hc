@@ -6,6 +6,7 @@ import { config } from './config.js';
 import { camRouter } from './routes/cam.js';
 import { internalRouter } from './routes/internal.js';
 import { startStaleChecker } from './lib/stale.js';
+import { startRetention } from './lib/retention.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const app = express();
@@ -33,3 +34,4 @@ app.use((err, req, res, _next) => {
 
 app.listen(config.PORT, '127.0.0.1', () => console.log(`api listening on :${config.PORT}`));
 startStaleChecker();
+startRetention();

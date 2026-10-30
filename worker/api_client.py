@@ -28,8 +28,11 @@ class ApiClient:
     async def heartbeat(self, sessions: list[dict[str, Any]]) -> None:
         await self._request("POST", "/internal/heartbeat", {"sessions": sessions})
 
-    async def event(self, body: dict[str, Any]) -> None:
-        await self._request("POST", "/internal/events", body)
+    async def event(self, body: dict[str, Any]) -> dict[str, Any]:
+        return await self._request("POST", "/internal/events", body)
+
+    async def clip(self, event_id: int, clip_path: str) -> None:
+        await self._request("POST", f"/internal/events/{event_id}/clip", {"clipPath": clip_path})
 
     async def close(self) -> None:
         await self.http.close()
