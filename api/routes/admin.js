@@ -7,6 +7,7 @@ import { pool } from '../db.js';
 import { requireAdmin } from '../lib/adminAuth.js';
 import { watchToken } from '../lib/livekit.js';
 import { resolveAlert } from '../lib/resolve.js';
+import { s3Enabled, signedUrl } from '../lib/s3.js';
 import { endSession, SESSION_COLUMNS } from '../lib/sessions.js';
 
 export const adminRouter = Router();
@@ -129,6 +130,11 @@ adminRouter.get(/^\/media\/(frames|clips|recordings)\/(\d+)\/([\w.-]+\.(?:jpg|mp
   try {
     const [kind, sid, file] = [req.params[0], Number(req.params[1]), req.params[2]];
     if (!(await sessionFor(req, sid))) return res.status(404).end();
+    if (kind === 'recordings' && s3Enabled()) {
+      const rel = `recordings/${sid}/${file}`;
+      const [[rec]] = await pool.query('SELECT in_s3 AS inS3 FROM recordings WHERE path = ?', [rel]);
+      if (rec?.inS3) return res.redirect(await signedUrl(rel)); // short-lived link straight to S3
+    }
     const full = path.resolve(storageRoot, kind, String(sid), file);
     if (!full.startsWith(storageRoot + path.sep)) return res.status(404).end();
     res.sendFile(full, { dotfiles: 'deny' }, (err) => err && !res.headersSent && res.status(404).end()); // Range-capable

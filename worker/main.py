@@ -29,7 +29,8 @@ class Supervisor:
 
     async def sync_sessions(self) -> None:
         """Start watchers for live sessions, stop ones that ended. Also how sessions resume after a restart."""
-        sessions = {s["id"]: s for s in await self.client.active_sessions()}
+        index, count = self.cfg.shard
+        sessions = {s["id"]: s for s in await self.client.active_sessions() if s["id"] % count == index}
         for sid, info in sessions.items():
             entry = self.watchers.get(sid)
             if entry and not entry[1].done():
@@ -69,7 +70,7 @@ class Supervisor:
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
             loop.add_signal_handler(sig, self.stopping.set)
-        log.info("worker started (%.1f fps sampling)", self.cfg.sample_fps)
+        log.info("worker %d/%d started (%.1f fps sampling)", *self.cfg.shard, self.cfg.sample_fps)
         await asyncio.gather(self._every(self.cfg.poll_sec, self.sync_sessions),
                              self._every(self.cfg.heartbeat_sec, self.heartbeat))
         for watcher, _ in self.watchers.values():

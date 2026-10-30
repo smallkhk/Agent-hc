@@ -67,6 +67,18 @@ Retention runs hourly in the API:
 - clips and snapshots of false positives / ignored alerts are deleted after `RETENTION_DAYS`;
 - clips and snapshots of **confirmed** alerts are kept, and so are snapshots saved as training samples.
 
+**S3 offload (optional):** set `S3_BUCKET` (+ `S3_REGION`, AWS credentials or an instance role; `S3_ENDPOINT` for
+MinIO / R2). Finished chunks are uploaded every 5 minutes, checked, then removed from local disk; the dashboard plays
+them through 5-minute signed links and retention deletes them from S3. Clips and snapshots stay on local disk.
+
+## Scaling
+
+Each worker process handles many sessions (one asyncio task each). To use more cores, run several workers:
+`WORKERS=3 pm2 start deploy/ecosystem.config.cjs` starts `handcam-worker-0..2`, and each takes the sessions whose
+id % 3 matches its index. Measured on a 4-core test box: about 0.1 core per 854x480 session (decode, detection,
+recording) at ~5–6 fps delivered; at a full 15 fps expect roughly 0.25 core per session, i.e. about 5 of 8 cores for
+20 sessions. Check on your own hardware before a big event; `RECORD_FPS` and `SAMPLE_FPS` are the main knobs.
+
 Worker tests (need `ffmpeg`): `.venv/bin/pip install pytest && .venv/bin/python -m pytest worker/tests`.
 
 ## Admin dashboard

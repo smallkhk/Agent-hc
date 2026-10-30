@@ -12,6 +12,8 @@ try {
   // no .env: rely on the shell environment
 }
 
+const workers = Number(env.WORKERS ?? process.env.WORKERS ?? 1);
+
 module.exports = {
   apps: [
     {
@@ -28,15 +30,16 @@ module.exports = {
       env,
       max_memory_restart: '512M',
     },
-    {
-      name: 'handcam-worker',
+    // One worker process per WORKERS (default 1); each takes the sessions with id % WORKERS == its index.
+    ...Array.from({ length: workers }, (_, i) => ({
+      name: workers > 1 ? `handcam-worker-${i}` : 'handcam-worker',
       cwd: root,
       script: '.venv/bin/python',
       args: '-m worker.main',
       interpreter: 'none',
-      env,
+      env: { ...env, WORKER_SHARD: `${i}/${workers}` },
       restart_delay: 2000,
       kill_timeout: 15000, // let FFmpeg close the current chunk cleanly
-    },
+    })),
   ],
 };

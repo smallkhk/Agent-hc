@@ -7,6 +7,7 @@ import path from 'node:path';
 import { rm } from 'node:fs/promises';
 import { config } from '../config.js';
 import { pool } from '../db.js';
+import { deleteObject } from './s3.js';
 
 const EVERY_MS = 60 * 60 * 1000;
 const root = path.resolve(config.STORAGE_DIR);
@@ -27,11 +28,12 @@ export async function runRetention(days = config.RETENTION_DAYS) {
   await pool.query(`UPDATE recordings r SET keep = ${UNRESOLVED_FLAG}`);
 
   const [chunks] = await pool.query(
-    `SELECT id, path FROM recordings r
+    `SELECT id, path, in_s3 AS inS3 FROM recordings r
      WHERE keep = FALSE AND ended_at IS NOT NULL AND ended_at < UTC_TIMESTAMP() - INTERVAL ? DAY`,
     [days],
   );
   for (const c of chunks) {
+    if (c.inS3) await deleteObject(c.path);
     await removeFile(c.path);
     await pool.query('DELETE FROM recordings WHERE id = ?', [c.id]);
   }

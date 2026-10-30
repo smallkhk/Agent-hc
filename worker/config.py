@@ -39,12 +39,22 @@ class Config:
     llm_model: str
     llm_min_interval_sec: float
     screen: ScreenParams
+    shard: tuple[int, int] = (0, 1)  # (index, count): this worker watches sessions with id % count == index
     poll_sec: float = 5.0
     heartbeat_sec: float = 10.0
 
 
+def _shard() -> tuple[int, int]:
+    raw = os.environ.get("WORKER_SHARD") or "0/1"
+    index, count = (int(x) for x in raw.split("/"))
+    if not 0 <= index < count:
+        raise RuntimeError(f"WORKER_SHARD must be i/N with 0 <= i < N, got {raw}")
+    return index, count
+
+
 def load() -> Config:
     return Config(
+        shard=_shard(),
         # Same host as LiveKit: skip Nginx/TLS.
         livekit_url=_env("LIVEKIT_INTERNAL_URL", "ws://127.0.0.1:7880"),
         livekit_api_key=_env("LIVEKIT_API_KEY"),

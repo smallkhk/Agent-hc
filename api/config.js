@@ -12,6 +12,11 @@ const schema = z.object({
   WORKER_SECRET: z.string().min(32),
   STORAGE_DIR: z.string().min(1).default('/var/handcam/recordings'),
   RETENTION_DAYS: z.coerce.number().int().positive().default(7),
+  // Optional S3 offload of finished recording chunks. Credentials: standard AWS env / instance role.
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().default('us-east-1'),
+  S3_ENDPOINT: z.string().optional(), // S3-compatible storage (MinIO, R2, ...)
+  S3_PREFIX: z.string().default(''),
   // Admin dashboard (Discord OAuth). Dashboard is off until all three are set.
   DISCORD_CLIENT_ID: z.string().optional(),
   DISCORD_CLIENT_SECRET: z.string().optional(),

@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS recordings (
   ended_at    DATETIME(3)  NULL,
   size_bytes  BIGINT UNSIGNED NOT NULL DEFAULT 0,
   keep        BOOLEAN      NOT NULL DEFAULT FALSE,   -- true while a flagged event is unresolved
+  in_s3       BOOLEAN      NOT NULL DEFAULT FALSE,   -- offloaded to S3_BUCKET (local copy removed)
   UNIQUE KEY uq_recordings_path (path),
   KEY ix_recordings_session (session_id),
   KEY ix_recordings_retention (keep, started_at),
