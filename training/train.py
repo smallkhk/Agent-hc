@@ -93,9 +93,9 @@ def wash(img: np.ndarray, rng: random.Random) -> np.ndarray:
 
 
 def augment(img: np.ndarray, rng: random.Random) -> np.ndarray:
-    if rng.random() < 0.45:
+    if rng.random() < 0.6:
         img = fingers(img, rng)
-    if rng.random() < 0.4:
+    if rng.random() < 0.5:
         img = wash(img, rng)
     if rng.random() < 0.7:
         img = perspective(img, rng)
