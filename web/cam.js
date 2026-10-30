@@ -32,25 +32,57 @@
   let lastSenderBytes = 0;
   let totalBytes = 0;
   let unreportedBytes = 0;
+  let liveSince = null;
 
-  $('res').value = res;
+  const radios = () => [...document.querySelectorAll('input[name="res"]')];
+  const pickRes = (value) => radios().forEach((r) => { r.checked = r.value === value; });
+  pickRes(res);
   $('preview').addEventListener('resize', (e) => {
     const { videoWidth: w, videoHeight: h } = e.target;
     if (w && h) $('frame').style.setProperty('--ar', `${w} / ${h}`);
   });
 
-  function showError(message) {
+  const BLOCKED = {
+    invalid: ['Link not valid', 'This cam link does not work. Use the latest link the bot sent you.'],
+    expired: ['Link expired', 'This link timed out before it was opened. Run /handcam join in Discord or ask an admin for a new one.'],
+    used: ['Already in use', 'This link is already live on another device. Each link works on one device only.'],
+    ended: ['Session ended', 'This hand cam session is over. Thanks for playing fair. You can close this page.'],
+  };
+
+  // Full-screen "can't continue" state. `message` is what the player needs to do next.
+  function showError(message, { title = "Can't start", kind = 'error', retry = false } = {}) {
+    stopped = kind === 'ended' || stopped;
+    $('start').hidden = true;
     $('live').hidden = true;
-    $('start').hidden = false;
-    $('go').disabled = false;
+    $('blocked').hidden = false;
+    $('blocked').querySelector('.blocked').classList.toggle('ended', kind === 'ended');
+    $('blocked-icon').querySelector('use').setAttribute('href', kind === 'ended' ? '#i-flag' : '#i-alert');
+    $('error-title').textContent = title;
     $('error').textContent = message;
-    $('error').hidden = false;
+    $('retry').hidden = !retry;
+    $('go').disabled = false;
+  }
+
+  function showCode(code, fallback) {
+    const [title, message] = BLOCKED[code] ?? ["Can't start", fallback];
+    showError(message, { title, kind: code });
   }
 
   function setState(kind, text) {
-    $('state').className = `state ${kind}`;
+    $('live-pill').className = `live-pill ${kind}`;
     $('state').textContent = text;
+    $('reconnect').hidden = kind === 'live' || kind === '';
+    if (kind === 'live' && !liveSince) liveSince = Date.now();
   }
+
+  setInterval(() => {
+    if (!liveSince) return;
+    const s = Math.floor((Date.now() - liveSince) / 1000);
+    const h = Math.floor(s / 3600);
+    const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    $('elapsed').textContent = h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  }, 1000);
 
   async function redeem() {
     const r = await fetch('/api/cam/redeem', {
@@ -63,6 +95,7 @@
     if (!r.ok) {
       const err = new Error(body.error || 'Could not start the hand cam.');
       err.fatal = r.status >= 400 && r.status < 500;
+      err.code = body.code;
       throw err;
     }
     return body;
@@ -104,7 +137,7 @@
       try {
         await connect();
       } catch (err) {
-        if (err.fatal) return showError(err.message);
+        if (err.fatal) return showCode(err.code, err.message);
         retryDelay = Math.min(retryDelay * 2, 30_000);
         onDisconnected();
       }
@@ -116,8 +149,8 @@
     guide.classList.toggle('ok', status?.ok === true);
     guide.classList.toggle('bad', status?.ok === false);
     $('guide-text').textContent = status?.ok
-      ? 'Screen detected'
-      : status?.reason || 'Fit your whole screen inside the box';
+      ? 'Screen locked'
+      : status?.reason || 'Fit your whole screen inside the brackets';
   }
 
   function onData(payload, _participant, _kind, topic) {
@@ -168,6 +201,7 @@
     const caps = track.mediaStreamTrack.getCapabilities?.() || {};
     $('torch').hidden = !caps.torch;
     torchOn = false;
+    $('torch').setAttribute('aria-pressed', 'false');
   }
 
   async function replaceTrack() {
@@ -182,13 +216,15 @@
 
   $('go').addEventListener('click', async () => {
     $('go').disabled = true;
-    $('error').hidden = true;
-    res = $('res').value;
+    res = radios().find((r) => r.checked)?.value || '480p';
     store.set('hc_res', res);
     try {
       track = await makeTrack();
     } catch {
-      return showError('Camera access was blocked. Allow camera access and try again.');
+      return showError('Allow camera access for this page in your browser settings, then try again.', {
+        title: 'Camera blocked',
+        retry: true,
+      });
     }
     $('start').hidden = true;
     $('live').hidden = false;
@@ -201,9 +237,14 @@
     try {
       await connect();
     } catch (err) {
-      if (err.fatal) return showError(err.message);
+      if (err.fatal) return showCode(err.code, err.message);
       onDisconnected();
     }
+  });
+
+  $('retry').addEventListener('click', () => {
+    $('blocked').hidden = true;
+    $('start').hidden = false;
   });
 
   $('flip').addEventListener('click', async () => {
@@ -214,6 +255,7 @@
 
   $('torch').addEventListener('click', async () => {
     torchOn = !torchOn;
+    $('torch').setAttribute('aria-pressed', String(torchOn));
     await track.mediaStreamTrack.applyConstraints({ advanced: [{ torch: torchOn }] }).catch(() => {});
   });
 
@@ -231,6 +273,37 @@
     reportDataUsed();
   });
 
-  if (!linkToken) showError('This page needs the cam link from your Discord DM.');
-  else if (!navigator.mediaDevices?.getUserMedia) showError('This browser cannot use the camera. Open the link in Chrome or Safari.');
+  // Start screen: greet the player and catch dead links before asking for the camera.
+  async function peek() {
+    const r = await fetch('/api/cam/peek', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ token: linkToken }),
+    }).catch(() => null);
+    const info = await r?.json().catch(() => null);
+    if (!info) return;
+    if (BLOCKED[info.state]) return showCode(info.state);
+    if (info.playerName) {
+      const h = $('hello');
+      h.textContent = 'Ready, ';
+      const name = document.createElement('em');
+      name.textContent = info.playerName;
+      h.append(name);
+    }
+    if (info.matchLabel) {
+      $('match').textContent = info.matchLabel;
+      $('match').hidden = false;
+      $('hud-match').textContent = info.matchLabel;
+    }
+    if (info.state === 'resume') $('go').lastChild.textContent = ' Resume';
+  }
+
+  if (!linkToken) {
+    showError('Open the hand cam link the bot sent you in Discord.', { title: 'No cam link' });
+  } else if (!navigator.mediaDevices?.getUserMedia) {
+    showError('This browser cannot use the camera. Open the link in Chrome or Safari.', { title: 'No camera access' });
+  } else {
+    peek();
+  }
 })();

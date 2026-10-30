@@ -23,6 +23,11 @@ const schema = z.object({
   DISCORD_TOKEN: z.string().optional(), // bot token: checks the admin role on login
   SESSION_SECRET: z.string().min(32).optional(),
   DISCORD_API_URL: z.url().default('https://discord.com/api/v10'),
+  // Branding shown on the cam page and dashboard.
+  BRAND_NAME: z.string().max(40).default('HANDCAM'),
+  BRAND_TAGLINE: z.string().max(80).default('Match integrity check'),
+  BRAND_ACCENT: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#FFB000'),
+  BRAND_LOGO_URL: z.string().optional(), // e.g. /brand/logo.png (put the file in web/brand/)
   DEFAULT_CAM_RES: z.enum(['360p', '480p', '720p']).default('480p'),
   CAM_LINK_TTL_MIN: z.coerce.number().int().positive().default(30),
 });

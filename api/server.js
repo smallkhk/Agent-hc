@@ -22,6 +22,15 @@ app.use(express.json({ limit: '16kb' }));
 app.use(cookieParser());
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
+app.get('/api/brand', (_req, res) => {
+  res.set('cache-control', 'public, max-age=300');
+  res.json({
+    name: config.BRAND_NAME,
+    tagline: config.BRAND_TAGLINE,
+    accent: config.BRAND_ACCENT,
+    logoUrl: config.BRAND_LOGO_URL || null,
+  });
+});
 app.use('/api/cam', camRouter);
 app.use('/internal', internalRouter);
 if (dashboardEnabled()) {
@@ -36,6 +45,8 @@ if (dashboardEnabled()) {
 app.get('/vendor/livekit-client.umd.js', (_req, res) =>
   res.sendFile(path.join(root, 'node_modules/livekit-client/dist/livekit-client.umd.js')),
 );
+app.use('/vendor/fonts/chakra-petch', express.static(path.join(root, 'node_modules/@fontsource/chakra-petch'), { maxAge: '30d' }));
+app.use('/vendor/fonts/inter', express.static(path.join(root, 'node_modules/@fontsource-variable/inter'), { maxAge: '30d' }));
 app.get('/vendor/socket.io.min.js', (_req, res) =>
   res.sendFile(path.join(root, 'node_modules/socket.io/client-dist/socket.io.min.js')),
 );

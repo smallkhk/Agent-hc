@@ -4,58 +4,103 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>Hand Cam Admin</title>
+  <meta name="theme-color" content="#07090c">
+  <title>Admin Console</title>
+  <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <section id="login" class="center" hidden>
-    <h1>Hand Cam Admin</h1>
-    <p>Log in with the Discord account you use to run lobbies.</p>
-    <a class="button primary" href="/auth/login">Log in with Discord</a>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-mark" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+    <symbol id="i-discord" viewBox="0 0 24 24"><path fill="currentColor" d="M19.6 5.3A16.6 16.6 0 0 0 15.5 4l-.5 1a15.3 15.3 0 0 0-6 0l-.5-1a16.6 16.6 0 0 0-4.1 1.3C1.8 9.2 1.1 13 1.4 16.8a16.7 16.7 0 0 0 5 2.6l1.1-1.7a10.8 10.8 0 0 1-1.7-.8l.4-.3a11.9 11.9 0 0 0 11.6 0l.4.3c-.5.3-1.1.6-1.7.8l1.1 1.7a16.6 16.6 0 0 0 5-2.6c.4-4.4-.7-8.2-3-11.5ZM8.7 14.5c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm6.6 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></g></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></g></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4"/></g></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9 16h6"/></g></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12l5 5L20 7"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 18h.01M8 18v-3M12 18v-6M16 18V9M20 18V6"/></g></symbol>
+  </svg>
+
+  <!-- Login -->
+  <section id="login" class="login grid-bg" hidden>
+    <div class="login-card panel panel-line">
+      <span class="accent-bar"></span>
+      <span class="brand-mark login-mark"><svg><use href="#i-mark"/></svg></span>
+      <p class="label" data-brand-name>HANDCAM</p>
+      <h1 class="display">Admin console</h1>
+      <p class="muted">Watch every hand cam in your lobbies, review AI flags and make the call.</p>
+      <a class="btn btn-discord btn-lg btn-block" href="/auth/login"><svg><use href="#i-discord"/></svg>Log in with Discord</a>
+      <p class="fine">Only server admins (Manage Server or the hand cam admin role) can sign in.</p>
+    </div>
   </section>
 
-  <header id="top" class="top" hidden>
-    <strong class="brand">Hand Cam</strong>
-    <select id="guild" aria-label="Server"></select>
-    <span class="counts" id="counts"></span>
+  <!-- Top bar -->
+  <header id="top" class="topbar" hidden>
+    <a class="brand" href="/admin.html"><span class="brand-mark"><svg><use href="#i-mark"/></svg></span><span class="brand-name" data-brand-name>HANDCAM</span></a>
+    <span class="topbar-sep"></span>
+    <select id="guild" class="select" aria-label="Server"></select>
     <span class="spacer"></span>
-    <span id="me" class="muted"></span>
-    <a href="/auth/logout" class="muted">Log out</a>
+    <div id="counts" class="stats"></div>
+    <span class="user"><span class="avatar" id="avatar"></span><span id="me"></span></span>
+    <a href="/auth/logout" class="icon-link" title="Log out" aria-label="Log out"><svg><use href="#i-logout"/></svg></a>
   </header>
 
-  <main id="grid-wrap" hidden>
+  <!-- Grid -->
+  <main id="grid-wrap" class="main" hidden>
+    <nav class="tabs" id="tabs" aria-label="Filter">
+      <button data-filter="all" class="tab active">All <span></span></button>
+      <button data-filter="live" class="tab">Live <span></span></button>
+      <button data-filter="flagged" class="tab">Flagged <span></span></button>
+      <button data-filter="pending" class="tab">Waiting <span></span></button>
+      <button data-filter="ended" class="tab">Ended <span></span></button>
+    </nav>
     <div id="grid" class="grid"></div>
-    <p id="empty" class="muted center" hidden>No hand cams in this server right now. Start one with <code>/handcam start</code>.</p>
+    <div id="empty" class="empty" hidden>
+      <div class="empty-mark"><div class="brackets"><i></i><i></i><i></i><i></i></div><svg><use href="#i-signal"/></svg></div>
+      <h2 class="display">No hand cams here</h2>
+      <p class="muted">Start one in Discord with <code>/handcam start @player</code> or <code>/handcam lobby start</code>.</p>
+    </div>
   </main>
 
-  <aside id="detail" class="detail" hidden aria-label="Session">
-    <header class="detail-head">
-      <button id="close" class="icon" aria-label="Close">✕</button>
-      <div>
-        <h2 id="d-name"></h2>
-        <div id="d-meta" class="muted"></div>
+  <!-- Session drawer -->
+  <div id="scrim" class="scrim" hidden></div>
+  <aside id="detail" class="drawer" hidden aria-label="Session">
+    <header class="drawer-head">
+      <button id="close" class="icon-link" aria-label="Close"><svg><use href="#i-close"/></svg></button>
+      <div class="drawer-title">
+        <h2 id="d-name" class="display"></h2>
+        <div id="d-meta" class="meta"></div>
       </div>
-      <span class="spacer"></span>
-      <button id="d-watch" class="button">Watch live</button>
-      <button id="d-stop" class="button danger">End session</button>
     </header>
-    <div class="detail-body">
-      <div class="live" id="live" hidden>
+    <div class="drawer-actions">
+      <button id="d-watch" class="btn btn-primary"><svg><use href="#i-eye"/></svg><span>Watch live</span></button>
+      <button id="d-stop" class="btn btn-danger"><svg><use href="#i-stop"/></svg>End session</button>
+    </div>
+    <div class="drawer-body">
+      <div class="viewer" id="live" hidden>
         <video id="d-video" autoplay muted playsinline></video>
-        <span id="d-live-state" class="pill">Connecting…</span>
+        <div class="brackets"><i></i><i></i><i></i><i></i></div>
+        <span id="d-live-state" class="chip">Connecting…</span>
       </div>
+
       <div class="section-head">
-        <h3>Timeline</h3>
-        <label class="muted"><input type="checkbox" id="show-info"> show info / shadow events</label>
+        <h3 class="label">Timeline</h3>
+        <label class="checkbox"><input type="checkbox" id="show-info"> Show info &amp; shadow events</label>
       </div>
       <ol id="timeline" class="timeline"></ol>
-      <h3>Recordings</h3>
+
+      <div class="section-head"><h3 class="label">Recordings</h3></div>
       <ul id="recordings" class="recordings"></ul>
     </div>
   </aside>
 
   <script src="/vendor/socket.io.min.js"></script>
   <script src="/vendor/livekit-client.umd.js"></script>
+  <script src="brand.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

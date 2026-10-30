@@ -172,6 +172,24 @@ export async function authDevice(token, deviceSecret) {
   return s.id;
 }
 
+// Read-only look at a cam link for the start screen: who it's for and whether it can still be used here.
+// state: ready (unused) | resume (already bound to this device) | used | expired | ended | invalid
+export async function peekCamLink(token, deviceSecrets) {
+  const [rows] = await pool.query(
+    `SELECT player_name AS playerName, match_label AS matchLabel, status, token_used_at AS usedAt,
+            device_hash AS deviceHash, token_expires_at < UTC_TIMESTAMP(3) AS expired
+     FROM sessions WHERE token_hash = ?`,
+    [sha256(token)],
+  );
+  const s = rows[0];
+  if (!s) return { state: 'invalid' };
+  const info = { playerName: s.playerName, matchLabel: s.matchLabel };
+  if (s.status === 'ended') return { state: 'ended', ...info };
+  if (!s.usedAt) return { state: s.expired ? 'expired' : 'ready', ...info };
+  const mine = deviceSecrets.some((secret) => hashMatches(secret, s.deviceHash));
+  return { state: mine ? 'resume' : 'used', ...info };
+}
+
 export async function addDataUsed(sessionId, bytes) {
   await pool.query('UPDATE sessions SET data_bytes = data_bytes + ? WHERE id = ?', [bytes, sessionId]);
 }

@@ -4,49 +4,123 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#07090c">
   <title>Hand Cam</title>
+  <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="cam.css">
 </head>
 <body>
-  <main id="start" class="panel">
-    <h1>Hand Cam</h1>
-    <p id="match"></p>
-    <p>Use this on a <strong>second device</strong>. Point the camera at the phone or iPad you play on.</p>
-    <label>Quality
-      <select id="res">
-        <option value="360p">360p (Data saver)</option>
-        <option value="480p">480p</option>
-        <option value="720p">720p</option>
-      </select>
-    </label>
-    <button id="go" type="button">Start hand cam</button>
-    <p id="error" class="error" role="alert" hidden></p>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-mark" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+    <symbol id="i-device" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><circle cx="12" cy="7" r="1.6"/><path d="M10 18h4"/></g></symbol>
+    <symbol id="i-frame" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V4h4M17 4h4v4M21 16v4h-4M7 20H3v-4"/><rect x="7" y="8" width="10" height="8" rx="1"/></g></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="15" height="12" rx="2"/><path d="M21 10v4M8 9l-1.5 3H11l-1.5 3"/></g></symbol>
+    <symbol id="i-flip" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><path d="M9.5 13a2.5 2.5 0 0 1 4.5-1.5M14.5 13a2.5 2.5 0 0 1-4.5 1.5M14 9.5v2h-2M10 16.5v-2h2"/></g></symbol>
+    <symbol id="i-torch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v4l-2 3v11h-4V10L8 7z"/><path d="M8 7h8M12 14v2"/></g></symbol>
+    <symbol id="i-data" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></g></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></g></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></g></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></g></symbol>
+  </svg>
+
+  <!-- 1. Setup -->
+  <main id="start" class="screen grid-bg">
+    <div class="wrap">
+      <header class="top">
+        <a class="brand" href="#"><span class="brand-mark"><svg><use href="#i-mark"/></svg></span><span class="brand-name" data-brand-name>HANDCAM</span></a>
+        <span id="match" class="chip chip-accent" hidden></span>
+      </header>
+
+      <section class="hero">
+        <p class="label">Hand cam check</p>
+        <h1 class="display" id="hello">Go live</h1>
+        <p class="lead">Your lobby needs to see your hands and your whole game screen while you play.</p>
+      </section>
+
+      <ol class="steps">
+        <li class="step panel">
+          <svg><use href="#i-device"/></svg>
+          <div><b>Use a second device</b><span>Another phone, tablet or a laptop webcam. Not the one you play on.</span></div>
+        </li>
+        <li class="step panel">
+          <svg><use href="#i-frame"/></svg>
+          <div><b>Frame screen + hands</b><span>The whole game screen inside the brackets, with your hands visible.</span></div>
+        </li>
+        <li class="step panel">
+          <svg><use href="#i-bolt"/></svg>
+          <div><b>Keep it open</b><span>Plug the device in and leave this page on until the match ends.</span></div>
+        </li>
+      </ol>
+
+      <fieldset class="quality">
+        <legend class="label">Quality</legend>
+        <div class="segmented" id="res">
+          <label><input type="radio" name="res" value="360p"><span><b>Saver</b><small>360p · ~70 MB/30 min</small></span></label>
+          <label><input type="radio" name="res" value="480p"><span><b>Standard</b><small>480p · ~110 MB/30 min</small></span></label>
+          <label><input type="radio" name="res" value="720p"><span><b>HD</b><small>720p · ~270 MB/30 min</small></span></label>
+        </div>
+      </fieldset>
+
+      <button id="go" type="button" class="btn btn-primary btn-lg btn-block">
+        <span class="dot"></span> Go live
+      </button>
+      <p class="fine">Video is only used to check this match and is deleted after 7 days unless an admin flags it.</p>
+    </div>
   </main>
 
-  <main id="live" hidden>
+  <!-- 2. Live -->
+  <main id="live" class="screen live-screen" hidden>
     <div class="stage">
       <div id="frame" class="frame">
         <video id="preview" autoplay muted playsinline></video>
-        <div id="guide" class="guide"><span id="guide-text">Fit your whole screen inside the box</span></div>
+        <div id="guide" class="guide">
+          <div class="brackets"><i></i><i></i><i></i><i></i></div>
+          <span class="guide-tag"><svg class="ok-icon"><use href="#i-lock"/></svg><svg class="bad-icon"><use href="#i-alert"/></svg><span id="guide-text">Fit your whole screen inside the brackets</span></span>
+        </div>
       </div>
     </div>
-    <header class="bar">
-      <span id="state" class="state">Connecting…</span>
-      <span id="data">0 MB</span>
+
+    <header class="hud hud-top">
+      <span class="live-pill" id="live-pill"><span class="dot"></span><span id="state">Connecting…</span></span>
+      <span class="hud-mid" id="hud-match"></span>
+      <span class="hud-stats num"><span id="elapsed">00:00</span><span class="sep"></span><svg><use href="#i-data"/></svg><span id="data">0.0 MB</span></span>
     </header>
-    <footer class="bar controls">
-      <button id="flip" type="button">Switch camera</button>
-      <button id="torch" type="button" hidden>Torch</button>
-      <select id="res-live" aria-label="Quality">
-        <option value="360p">360p</option>
-        <option value="480p">480p</option>
-        <option value="720p">720p</option>
-      </select>
+
+    <div id="reconnect" class="toast" hidden><span class="spinner"></span>Connection lost. Reconnecting…</div>
+
+    <footer class="hud hud-bottom">
+      <p class="hint">Keep this page open · device plugged in</p>
+      <div class="controls">
+        <button id="flip" type="button" class="icon-btn" aria-label="Switch camera" title="Switch camera"><svg><use href="#i-flip"/></svg></button>
+        <label class="quality-pick" title="Quality">
+          <span class="visually-hidden">Quality</span>
+          <select id="res-live" class="select">
+            <option value="360p">360p</option>
+            <option value="480p">480p</option>
+            <option value="720p">720p</option>
+          </select>
+        </label>
+        <button id="torch" type="button" class="icon-btn" aria-label="Torch" title="Torch" aria-pressed="false" hidden><svg><use href="#i-torch"/></svg></button>
+      </div>
     </footer>
-    <p id="hint" class="hint">Keep this page open and the device plugged in.</p>
+  </main>
+
+  <!-- 3. Can't continue (bad/used/expired link, session ended, no camera) -->
+  <main id="blocked" class="screen grid-bg" hidden>
+    <div class="wrap center">
+      <a class="brand" href="#"><span class="brand-mark"><svg><use href="#i-mark"/></svg></span><span class="brand-name" data-brand-name>HANDCAM</span></a>
+      <div class="blocked panel panel-line">
+        <span class="accent-bar"></span>
+        <svg class="blocked-icon" id="blocked-icon"><use href="#i-alert"/></svg>
+        <h1 class="display" id="error-title">Can't start</h1>
+        <p id="error" role="alert"></p>
+        <button id="retry" type="button" class="btn btn-ghost" hidden>Try again</button>
+      </div>
+    </div>
   </main>
 
   <script src="/vendor/livekit-client.umd.js"></script>
+  <script src="brand.js"></script>
   <script src="cam.js"></script>
 </body>
 </html>

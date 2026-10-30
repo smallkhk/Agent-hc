@@ -7,8 +7,9 @@
   const url = params.get('url');
   const token = params.get('t');
 
+  const CHIP = { live: 'chip chip-live', offline: 'chip chip-warn', '': 'chip' };
   const setState = (kind, text) => {
-    $('state').className = kind;
+    $('state').className = CHIP[kind] ?? 'chip';
     $('state').textContent = text;
   };
 

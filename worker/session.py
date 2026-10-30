@@ -86,6 +86,7 @@ class SessionWatcher:
         self.recorder = Recorder(self.recordings_dir, cfg.record_fps)
         self.room = rtc.Room()
         self.frame: rtc.VideoFrame | None = None
+        self.last_bgr: np.ndarray | None = None  # last analysed frame: the snapshot for freeze / drop alerts
         self.frame_seq = 0
         self.track_present = False
         self.track_lost_at: float | None = None
@@ -212,6 +213,7 @@ class SessionWatcher:
                 if frame is not None and seq != seen_seq:
                     seen_seq = seq
                     snapshot = await loop.run_in_executor(None, frame_to_bgr, frame)
+                    self.last_bgr = snapshot
                     result, diff, looping, scene_changed, flat, pred = await loop.run_in_executor(
                         None, self._analyse, snapshot
                     )
@@ -230,7 +232,8 @@ class SessionWatcher:
                 events += self.freeze_rule.update(static, started, integrity.FEED_FROZEN)
 
             if events:
-                await self._emit(events, snapshot)
+                # A stalled or dropped feed has no new frame: show the last thing the camera saw.
+                await self._emit(events, snapshot if snapshot is not None else self.last_bgr)
             try:
                 await asyncio.wait_for(self._stop.wait(), timeout=max(0.0, period - (time.monotonic() - started)))
             except asyncio.TimeoutError:

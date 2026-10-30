@@ -26,6 +26,13 @@ Players only use a browser: nothing to install.
 7. `pm2 start deploy/ecosystem.config.cjs`
 8. In Discord: `/handcam config alert_channel:#handcam-alerts`.
 
+## Branding
+
+Players and admins see your name, colour and logo, not "HANDCAM". In `.env`:
+`BRAND_NAME` (e.g. `FM Esports`), `BRAND_TAGLINE`, `BRAND_ACCENT` (hex colour, e.g. `#E5193B`; button text switches
+to white or black automatically), and `BRAND_LOGO_URL` (put the file in `web/brand/`, then `/brand/logo.png`).
+Restart the API to apply.
+
 ## Using it
 
 | Command | Who | |

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { config } from '../config.js';
 import { playerToken } from '../lib/livekit.js';
-import { addDataUsed, authDevice, CamLinkError, redeemCamLink } from '../lib/sessions.js';
+import { addDataUsed, authDevice, CamLinkError, peekCamLink, redeemCamLink } from '../lib/sessions.js';
 
 export const camRouter = Router();
 
@@ -27,6 +27,17 @@ const linkErrors = {
   used: [409, 'This cam link was already opened on another device.'],
   ended: [410, 'This hand cam session has ended.'],
 };
+
+// POST /api/cam/peek — start-screen info; does not use up the link
+camRouter.post('/peek', async (req, res, next) => {
+  const body = redeemBody.safeParse(req.body);
+  if (!body.success) return res.json({ state: 'invalid' });
+  try {
+    res.json(await peekCamLink(body.data.token, deviceSecrets(req)));
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /api/cam/redeem — cam link token → LiveKit publish token
 camRouter.post('/redeem', async (req, res, next) => {
