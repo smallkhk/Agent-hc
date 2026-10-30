@@ -62,7 +62,41 @@ def jpeg(img: np.ndarray, rng: random.Random) -> np.ndarray:
     return cv2.imdecode(buf, cv2.IMREAD_COLOR) if ok else img
 
 
+SKIN = [(45, 60, 95), (60, 85, 130), (80, 110, 160), (110, 145, 200), (140, 175, 225)]  # BGR, dark to light
+
+
+def fingers(img: np.ndarray, rng: random.Random) -> np.ndarray:
+    """Thumbs and fingers over the screen: every real hand cam has them, whatever the class."""
+    h, w = img.shape[:2]
+    out = img.copy()
+    for _ in range(rng.randint(1, 3)):
+        side = rng.choice(["bottom", "left", "right", "top"])
+        thick = rng.randint(h // 9, h // 5)
+        start = {"bottom": (rng.randint(0, w), h + thick), "top": (rng.randint(0, w), -thick),
+                 "left": (-thick, rng.randint(0, h)), "right": (w + thick, rng.randint(0, h))}[side]
+        tip = (rng.randint(w // 8, w * 7 // 8), rng.randint(h // 6, h * 5 // 6))
+        tone = np.array(rng.choice(SKIN), np.float32) * rng.uniform(0.8, 1.15)
+        mask = np.zeros((h, w), np.uint8)
+        cv2.line(mask, start, tip, 255, thick)
+        cv2.circle(mask, tip, thick // 2, 255, -1)
+        m = cv2.GaussianBlur(mask, (0, 0), thick / 6).astype(np.float32)[..., None] / 255
+        shade = 1 - 0.35 * np.linspace(0, 1, w, dtype=np.float32)[None, :, None] * rng.random()
+        out = (out * (1 - m) + tone.clip(0, 255) * shade * m).astype(np.uint8)
+    return out
+
+
+def wash(img: np.ndarray, rng: random.Random) -> np.ndarray:
+    """Camera filming a bright screen: low contrast, lifted blacks, warm or cool cast."""
+    cast = np.array([rng.uniform(170, 235), rng.uniform(170, 235), rng.uniform(170, 235)], np.float32)
+    a = rng.uniform(0.15, 0.45)
+    return (img.astype(np.float32) * (1 - a) + cast * a).clip(0, 255).astype(np.uint8)
+
+
 def augment(img: np.ndarray, rng: random.Random) -> np.ndarray:
+    if rng.random() < 0.45:
+        img = fingers(img, rng)
+    if rng.random() < 0.4:
+        img = wash(img, rng)
     if rng.random() < 0.7:
         img = perspective(img, rng)
     if rng.random() < 0.3:

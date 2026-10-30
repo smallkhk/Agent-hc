@@ -225,6 +225,55 @@ def esp_overlay(img: Image.Image, rng: random.Random) -> Image.Image:
     return Image.alpha_composite(img.convert("RGBA"), layer)
 
 
+BRANDS = ["CLOUD", "VIP", "HAX", "NEXUS", "STORM", "GHOST", "ZEUS", "KING", "PRO", "SKY", "ALPHA", "VORTEX"]
+
+
+def subtle_overlay(img: Image.Image, rng: random.Random, in_match: bool) -> Image.Image:
+    """Lightweight cheat HUD as seen on real hand cams: small brand watermark, thin FOV circle,
+    hairline snap lines and skeletons, small red name tags. Brand and circle stay on lobby screens too."""
+    W, H = img.size
+    layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    white = (255, 255, 255, rng.randint(170, 255))
+    if rng.random() < 0.75:  # brand watermark, top centre
+        brand = rng.choice(BRANDS) if rng.random() < 0.85 else rand_word(rng, (3, 7)).upper()
+        bf = font(rng, int(H * rng.uniform(0.03, 0.05)))
+        bcol = rng.choice([(235, 40, 50, 255), (255, 70, 90, 255), (255, 220, 40, 255), (60, 220, 255, 255), (255, 255, 255, 255)])
+        d.text((W // 2 + int(W * rng.uniform(-0.04, 0.04)) - bf.size * len(brand) // 3, int(H * rng.uniform(0.0, 0.06))), brand, font=bf, fill=bcol)
+    if rng.random() < (0.55 if in_match else 0.9):  # FOV circle, sometimes with crosshair and target square
+        r = int(H * rng.uniform(0.15, 0.42))
+        cx, cy = W // 2 + rng.randint(-W // 40, W // 40), H // 2 + rng.randint(-H // 30, H // 30)
+        lw = rng.randint(2, 4)
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=white, width=lw)
+        if rng.random() < 0.5:
+            d.line([(cx - r, cy), (cx + r, cy)], fill=white, width=max(1, lw - 1))
+            d.line([(cx, cy - r), (cx, cy + r)], fill=white, width=max(1, lw - 1))
+            s = r // 9
+            d.rectangle([cx - s, cy - s, cx + s, cy + s], outline=white, width=max(1, lw - 1))
+    if in_match:
+        tf = font(rng, int(H * rng.uniform(0.022, 0.034)))
+        top = (W // 2, int(H * rng.uniform(0.0, 0.05)))
+        for _ in range(rng.randint(1, 8)):
+            th = int(H * rng.uniform(0.03, 0.22))  # mostly far, small targets
+            x, y = rng.randint(int(W * 0.05), int(W * 0.95)), rng.randint(int(H * 0.25), int(H * 0.75))
+            if rng.random() < 0.8:
+                d.line([top, (x, y - th // 2)], fill=(255, 255, 255, rng.randint(120, 230)), width=rng.randint(1, 2))
+            if rng.random() < 0.75:  # small red name tag above the target
+                tw, tag_h = int(th * rng.uniform(1.2, 2.5)) + 20, max(10, int(H * 0.028))
+                d.rounded_rectangle([x - tw // 2, y - th // 2 - tag_h - 4, x + tw // 2, y - th // 2 - 4], radius=3,
+                                    fill=(rng.randint(200, 245), rng.randint(30, 70), rng.randint(40, 80), rng.randint(170, 240)))
+                if rng.random() < 0.6:
+                    d.text((x - tw // 2 + 3, y - th // 2 - tag_h - 4), rand_word(rng, (4, 8)), font=tf, fill=(255, 255, 255, 230))
+            if rng.random() < 0.4:  # hairline skeleton
+                hx, hy = x, y - th // 2 + th // 8
+                neck, hip = (hx, y - th // 4), (hx, y + th // 8)
+                for a, b in ((neck, hip), (neck, (x - th // 5, y)), (neck, (x + th // 5, y)),
+                             (hip, (x - th // 6, y + th // 2)), (hip, (x + th // 6, y + th // 2))):
+                    d.line([a, b], fill=white, width=rng.randint(1, 2))
+                d.ellipse([hx - th // 12, hy - th // 12, hx + th // 12, hy + th // 12], outline=white, width=1)
+    return Image.alpha_composite(img.convert("RGBA"), layer)
+
+
 # --- main ------------------------------------------------------------------------------------
 
 def load_bases(dirs: list[Path]) -> list[Path]:
@@ -233,9 +282,15 @@ def load_bases(dirs: list[Path]) -> list[Path]:
 
 def render(base: Path, kind: str, rng: random.Random) -> Image.Image:
     img = Image.open(base).convert("RGB").resize((SIZE[0] * SCALE, SIZE[1] * SCALE), Image.BILINEAR)
-    out = mod_menu(img, rng) if kind == "mod_menu" else esp_overlay(img, rng)
-    if kind == "mod_menu" and rng.random() < 0.25:  # menu and ESP often show together
-        out = esp_overlay(out.convert("RGB"), rng)
+    in_match = base.parent.name != "codm_menu_ui"
+    if kind == "mod_menu":
+        out = mod_menu(img, rng)
+        if rng.random() < 0.25:  # menu and ESP often show together
+            out = subtle_overlay(out.convert("RGB"), rng, in_match) if rng.random() < 0.5 or not in_match else esp_overlay(out.convert("RGB"), rng)
+    elif kind == "esp_overlay" and in_match and rng.random() < 0.45:
+        out = esp_overlay(img, rng)  # bold boxes: in a match only
+    else:
+        out = subtle_overlay(img, rng, in_match)
     return out.convert("RGB").resize(SIZE, Image.LANCZOS)
 
 
@@ -251,15 +306,14 @@ def main(argv: list[str] | None = None) -> None:
     bases = load_bases(args.base)
     if not bases:
         raise SystemExit("no base images found")
-    # ESP only shows in a match, so it is drawn on gameplay only (when the bases are split by class)
-    esp_bases = [b for b in bases if b.parent.name == "normal_gameplay"] or bases
+    # Cheat overlays are mostly seen in a match; the brand watermark and FOV circle stay on lobby screens too.
+    match_bases = [b for b in bases if b.parent.name != "codm_menu_ui"] or bases
     rng = random.Random(args.seed)
     for kind, n in (("mod_menu", args.mod), ("esp_overlay", args.esp)):
-        pool = esp_bases if kind == "esp_overlay" else bases
         out = args.out / kind
         out.mkdir(parents=True, exist_ok=True)
         for i in range(n):
-            base = rng.choice(pool)
+            base = rng.choice(match_bases if kind == "esp_overlay" and rng.random() < 0.75 else bases)
             render(base, kind, rng).save(out / f"synth_{args.seed}_{i:05d}.jpg", quality=rng.randint(70, 95))
         print(f"{n} synthetic {kind} → {out}")
 
