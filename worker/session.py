@@ -68,7 +68,11 @@ class SessionWatcher:
         self.glare_rule = EscalatingRule(t["graceSec"], None)  # glare only ever warns
         self.freeze_rule = EscalatingRule(None, t["freezeSec"])
         self.drop_rule = EscalatingRule(None, t["dropSec"])
+        self.loop_rule = EscalatingRule(None, 0)  # one violation per looping episode
+        self.scene_rule = EscalatingRule(0, None)  # one warning per change
         self.freeze = integrity.FreezeDetector(cfg.freeze_diff)
+        self.loops = integrity.LoopDetector(int(600 * cfg.sample_fps), match_run=cfg.loop_match_run)
+        self.scene = integrity.SceneChangeDetector()
         self.smoother = screen_mod.CornerSmoother()
 
         self.recordings_dir = cfg.storage_dir / "recordings" / str(self.id)
@@ -200,10 +204,12 @@ class SessionWatcher:
                 if frame is not None and seq != seen_seq:
                     seen_seq = seq
                     snapshot = await loop.run_in_executor(None, frame_to_bgr, frame)
-                    result, diff = await loop.run_in_executor(None, self._analyse, snapshot)
+                    result, diff, looping, scene_changed = await loop.run_in_executor(None, self._analyse, snapshot)
                     static = self.freeze.is_static(diff)
                     self.uptime_delta += period
                     events += self._screen_events(result, started)
+                    events += self.loop_rule.update(looping, started, integrity.FEED_LOOPED)
+                    events += self.scene_rule.update(scene_changed, started, integrity.SCENE_CHANGED)
                     await self._send_hint(result, started)
                 else:
                     static = True  # no new frame since the last sample: the feed stalled
@@ -254,10 +260,11 @@ class SessionWatcher:
         except Exception as err:  # noqa: BLE001
             log.error("session %s: clip for event %s not delivered: %s", self.id, event_id, err)
 
-    def _analyse(self, bgr: np.ndarray) -> tuple[screen_mod.ScreenResult, float]:
+    def _analyse(self, bgr: np.ndarray) -> tuple[screen_mod.ScreenResult, float, bool, bool]:
         result = screen_mod.detect_screen(bgr, self.cfg.screen)
-        self.smoother.update(result.corners)
-        return result, self.freeze.update(bgr)
+        corners = self.smoother.update(result.corners)
+        scene_changed = self.scene.update(bgr, corners)
+        return result, self.freeze.update(bgr), self.loops.update(bgr), scene_changed
 
     def _screen_events(self, r: screen_mod.ScreenResult, now: float) -> list[Event]:
         glare = r.reason == screen_mod.GLARE

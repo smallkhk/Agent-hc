@@ -31,6 +31,7 @@ class Config:
     sample_fps: float
     record_fps: float
     freeze_diff: float
+    loop_match_run: int
     screen: ScreenParams
     poll_sec: float = 5.0
     heartbeat_sec: float = 10.0
@@ -48,6 +49,7 @@ def load() -> Config:
         sample_fps=_float("SAMPLE_FPS", 2),
         record_fps=_float("RECORD_FPS", 15),
         freeze_diff=_float("FREEZE_DIFF", 0.3),
+        loop_match_run=int(_float("LOOP_MATCH_RUN", 20)),
         screen=ScreenParams(
             edge_margin_px=int(_float("EDGE_MARGIN_PX", 8)),
             min_area=_float("MIN_SCREEN_AREA", 0.15),
