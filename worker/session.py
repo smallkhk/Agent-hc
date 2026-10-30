@@ -18,6 +18,7 @@ from worker.api_client import ApiClient
 from worker.config import Config
 from worker.detect import integrity
 from worker.detect import screen as screen_mod
+from worker.detect.menu import MenuClassifier, MenuRule, Prediction, flatten_screen
 from worker.record.recorder import Recorder, cut_clip, list_chunks
 from worker.rules import EscalatingRule, Event
 
@@ -58,7 +59,8 @@ def frame_to_bgr(frame: rtc.VideoFrame) -> np.ndarray:
 
 
 class SessionWatcher:
-    def __init__(self, info: dict[str, Any], cfg: Config, client: ApiClient) -> None:
+    def __init__(self, info: dict[str, Any], cfg: Config, client: ApiClient,
+                 menu: MenuClassifier | None = None) -> None:
         self.id: int = info["id"]
         self.room_name: str = info["room"]
         self.cfg = cfg
@@ -68,6 +70,8 @@ class SessionWatcher:
         self.glare_rule = EscalatingRule(t["graceSec"], None)  # glare only ever warns
         self.freeze_rule = EscalatingRule(None, t["freezeSec"])
         self.drop_rule = EscalatingRule(None, t["dropSec"])
+        self.menu = menu
+        self.menu_rule = MenuRule(t["menuThreshold"])
         self.loop_rule = EscalatingRule(None, 0)  # one violation per looping episode
         self.scene_rule = EscalatingRule(0, None)  # one warning per change
         self.freeze = integrity.FreezeDetector(cfg.freeze_diff)
@@ -96,6 +100,7 @@ class SessionWatcher:
         self.glare_rule.warn_sec = t["graceSec"]
         self.freeze_rule.violation_sec = t["freezeSec"]
         self.drop_rule.violation_sec = t["dropSec"]
+        self.menu_rule.threshold = t["menuThreshold"]
 
     def stop(self) -> None:
         self._stop.set()
@@ -204,12 +209,18 @@ class SessionWatcher:
                 if frame is not None and seq != seen_seq:
                     seen_seq = seq
                     snapshot = await loop.run_in_executor(None, frame_to_bgr, frame)
-                    result, diff, looping, scene_changed = await loop.run_in_executor(None, self._analyse, snapshot)
+                    result, diff, looping, scene_changed, flat, pred = await loop.run_in_executor(
+                        None, self._analyse, snapshot
+                    )
                     static = self.freeze.is_static(diff)
                     self.uptime_delta += period
                     events += self._screen_events(result, started)
                     events += self.loop_rule.update(looping, started, integrity.FEED_LOOPED)
                     events += self.scene_rule.update(scene_changed, started, integrity.SCENE_CHANGED)
+                    if self.menu:
+                        flagged = self.menu_rule.update(pred)
+                        if flagged and flat is not None:
+                            await self._emit_menu(flagged, flat)
                     await self._send_hint(result, started)
                 else:
                     static = True  # no new frame since the last sample: the feed stalled
@@ -260,11 +271,23 @@ class SessionWatcher:
         except Exception as err:  # noqa: BLE001
             log.error("session %s: clip for event %s not delivered: %s", self.id, event_id, err)
 
-    def _analyse(self, bgr: np.ndarray) -> tuple[screen_mod.ScreenResult, float, bool, bool]:
+    def _analyse(
+        self, bgr: np.ndarray
+    ) -> tuple[screen_mod.ScreenResult, float, bool, bool, np.ndarray | None, Prediction | None]:
         result = screen_mod.detect_screen(bgr, self.cfg.screen)
         corners = self.smoother.update(result.corners)
         scene_changed = self.scene.update(bgr, corners)
-        return result, self.freeze.update(bgr), self.loops.update(bgr), scene_changed
+        flat = pred = None
+        if self.menu and result.ok and corners is not None:  # classify only a readable screen
+            flat = flatten_screen(bgr, corners)
+            pred = self.menu.predict(flat)
+        return result, self.freeze.update(bgr), self.loops.update(bgr), scene_changed, flat, pred
+
+    async def _emit_menu(self, pred: Prediction, flat: np.ndarray) -> None:
+        # The flattened screen is the snapshot: it is what admins judge and what training uses.
+        severity = "info" if self.cfg.menu_shadow else "violation"
+        await self._emit([Event(pred.label or pred.top, severity, round(pred.score, 3))], flat,
+                         save_frame=True, outline=False)
 
     def _screen_events(self, r: screen_mod.ScreenResult, now: float) -> list[Event]:
         glare = r.reason == screen_mod.GLARE
@@ -287,12 +310,13 @@ class SessionWatcher:
         except Exception as err:  # noqa: BLE001 - feedback is best effort
             log.debug("session %s: hint not sent: %s", self.id, err)
 
-    async def _emit(self, events: list[Event], snapshot: np.ndarray | None) -> None:
+    async def _emit(self, events: list[Event], snapshot: np.ndarray | None, *,
+                    save_frame: bool = False, outline: bool = True) -> None:
         ts_ms = int(time.time() * 1000)
         frame_path = None
-        if snapshot is not None and any(e.severity != "info" for e in events):
+        if snapshot is not None and (save_frame or any(e.severity != "info" for e in events)):
             frame_path = await asyncio.get_running_loop().run_in_executor(
-                None, self._save_frame, snapshot, ts_ms, events[0].type
+                None, self._save_frame, snapshot, ts_ms, events[0].type, outline
             )
         for e in events:
             body = {"sessionId": self.id, "type": e.type, "severity": e.severity, "score": e.score,
@@ -308,13 +332,13 @@ class SessionWatcher:
                 self._clips.add(task)
                 task.add_done_callback(self._clips.discard)
 
-    def _save_frame(self, bgr: np.ndarray, ts_ms: int, event_type: str) -> str:
+    def _save_frame(self, bgr: np.ndarray, ts_ms: int, event_type: str, outline: bool = True) -> str:
         rel = Path("frames") / str(self.id) / f"{ts_ms}_{event_type}.jpg"
         path = self.cfg.storage_dir / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         img = bgr.copy()
         corners = self.smoother.corners
-        if corners is not None:
+        if outline and corners is not None:
             cv2.polylines(img, [corners.astype(np.int32)], True, (0, 200, 0), 2)
         cv2.imwrite(str(path), img, [cv2.IMWRITE_JPEG_QUALITY, 85])
         return rel.as_posix()

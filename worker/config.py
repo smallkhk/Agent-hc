@@ -32,6 +32,8 @@ class Config:
     record_fps: float
     freeze_diff: float
     loop_match_run: int
+    menu_model: Path
+    menu_shadow: bool
     screen: ScreenParams
     poll_sec: float = 5.0
     heartbeat_sec: float = 10.0
@@ -50,6 +52,9 @@ def load() -> Config:
         record_fps=_float("RECORD_FPS", 15),
         freeze_diff=_float("FREEZE_DIFF", 0.3),
         loop_match_run=int(_float("LOOP_MATCH_RUN", 20)),
+        menu_model=Path(_env("MENU_MODEL", str(Path(__file__).parent / "models" / "menu_classifier.onnx"))),
+        # Shadow mode: menu flags are stored as info events (no alert) until the model is trusted.
+        menu_shadow=_env("MENU_SHADOW", "true").lower() != "false",
         screen=ScreenParams(
             edge_margin_px=int(_float("EDGE_MARGIN_PX", 8)),
             min_area=_float("MIN_SCREEN_AREA", 0.15),

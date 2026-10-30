@@ -8,6 +8,7 @@ import signal
 
 from worker import config as config_mod
 from worker.api_client import ApiClient
+from worker.detect.menu import MenuClassifier
 from worker.session import SessionWatcher
 
 log = logging.getLogger("worker")
@@ -17,6 +18,7 @@ class Supervisor:
     def __init__(self) -> None:
         self.cfg = config_mod.load()
         self.client = ApiClient(self.cfg)
+        self.menu = MenuClassifier.load(self.cfg.menu_model)  # one ONNX session for every watcher
         self.watchers: dict[int, tuple[SessionWatcher, asyncio.Task[None]]] = {}
         self.stopping = asyncio.Event()
 
@@ -28,7 +30,7 @@ class Supervisor:
             if entry and not entry[1].done():
                 entry[0].update_thresholds(info["thresholds"])
                 continue
-            watcher = SessionWatcher(info, self.cfg, self.client)
+            watcher = SessionWatcher(info, self.cfg, self.client, self.menu)
             task = asyncio.create_task(watcher.run(), name=f"session-{sid}")
             task.add_done_callback(lambda t, sid=sid: self._on_done(sid, t))
             self.watchers[sid] = (watcher, task)

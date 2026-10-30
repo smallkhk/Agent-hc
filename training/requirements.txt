@@ -1,0 +1,8 @@
+# plus torch + torchvision (CPU build: --index-url https://download.pytorch.org/whl/cpu)
+onnx>=1.16
+onnxscript>=0.1
+onnxruntime>=1.18
+opencv-python-headless>=4.9
+numpy>=1.26
+pillow>=10
+mysql-connector-python>=9.0

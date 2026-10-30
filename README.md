@@ -46,6 +46,7 @@ The vision worker checks every live cam twice a second and posts to the alert ch
 | Hand cam disconnected | violation after 20 s |
 | Feed looped / replayed (pre-recorded video) | violation when 20 consecutive samples (10 s) repeat an earlier part of the last 10 min |
 | Camera scene changed (possible device swap) | warning |
+| Mod menu / ESP / unknown overlay on screen | needs a trained model, see [training/README.md](training/README.md). Starts in shadow mode: logged, no alert, until `MENU_SHADOW=false` |
 
 Each alert has the snapshot and **Confirm / False positive / Ignore 10m** buttons (admins only; first click wins).
 Confirm and False positive are saved as training labels. The player's cam page shows what is wrong in the guide box.

@@ -6,3 +6,6 @@ __pycache__/
 /recordings/
 /training/dataset/
 *.log
+worker/models/*.onnx
+worker/models/*.json
+.venv-train/
