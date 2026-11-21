@@ -24,7 +24,7 @@ GLARE = "GLARE"
 class ScreenParams:
     edge_margin_px: int = 8  # in source-frame pixels
     min_area: float = 0.15  # fraction of the frame
-    aspect_min: float = 1.3
+    aspect_min: float = 1.15  # iPads are ~1.33-1.43 and read lower when tilted
     aspect_max: float = 2.3
     min_brightness: float = 40.0  # mean gray inside the screen, 0-255
     glare_level: int = 250
@@ -162,18 +162,42 @@ def _check_pixels(
     return ScreenResult(True, None, corners, area_frac, aspect, brightness, glare)
 
 
-def outline_support(gray: np.ndarray, quad: np.ndarray, samples_per_side: int = 60) -> float:
-    """Fraction of a quad's outline (work pixels) that lines up with an edge in this frame."""
+def _edge_map(gray: np.ndarray) -> np.ndarray:
     edges = cv2.Canny(cv2.GaussianBlur(gray, (5, 5), 0), 50, 150)
-    edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=2)  # a few px of tolerance
-    h, w = gray.shape
-    hits = total = 0
-    for a, b in zip(quad, np.roll(quad, -1, axis=0)):
-        for t in np.linspace(0.05, 0.95, samples_per_side):  # skip the (often rounded) corners
-            x, y = (a + (b - a) * t).astype(int)
-            total += 1
-            hits += bool(0 <= x < w and 0 <= y < h and edges[y, x])
-    return hits / total
+    return cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=2)  # a few px of tolerance
+
+
+def _outline_points(quad: np.ndarray, samples_per_side: int = 60) -> np.ndarray:
+    t = np.linspace(0.05, 0.95, samples_per_side)[:, None]  # skip the (often rounded) corners
+    return np.concatenate([a + (b - a) * t for a, b in zip(quad, np.roll(quad, -1, axis=0))])
+
+
+def _support(edges: np.ndarray, pts: np.ndarray) -> float:
+    h, w = edges.shape
+    p = pts.astype(int)
+    inside = (p[:, 0] >= 0) & (p[:, 0] < w) & (p[:, 1] >= 0) & (p[:, 1] < h)
+    hits = np.zeros(len(p), bool)
+    hits[inside] = edges[p[inside, 1], p[inside, 0]] > 0
+    return float(hits.mean())
+
+
+def outline_support(gray: np.ndarray, quad: np.ndarray) -> float:
+    """Fraction of a quad's outline (work pixels) that lines up with an edge in this frame."""
+    return _support(_edge_map(gray), _outline_points(quad))
+
+
+def best_outline_shift(gray: np.ndarray, quad: np.ndarray, max_shift: int = 20, step: int = 4) -> tuple[float, np.ndarray]:
+    """Best outline support over small shifts (a hand-held device wobbles between samples)."""
+    edges = _edge_map(gray)
+    pts = _outline_points(quad)
+    best = (0.0, np.zeros(2, np.float32))
+    for dy in range(-max_shift, max_shift + 1, step):
+        for dx in range(-max_shift, max_shift + 1, step):
+            off = np.float32([dx, dy])
+            sup = _support(edges, pts + off)
+            if sup > best[0]:
+                best = (sup, off)
+    return best
 
 
 class ScreenTracker:
@@ -181,9 +205,9 @@ class ScreenTracker:
 
     A hand or an arm over the device can hide part of its outline or join it to the frame edge, so
     detection alone reports CUT_OFF / NOT_FOUND while the screen has not moved. When that happens and
-    most of the last good outline still lines up with edges in the new frame, the screen is in the same
-    place, only partly covered: it still passes. A screen that really moved or left the frame no longer
-    matches its old outline, so the warning stands.
+    most of the last good outline (allowing for a small wobble of a hand-held device) still lines up
+    with edges in the new frame, the screen is in the same place, only partly covered: it still passes.
+    A screen that really moved or left the frame no longer matches its old outline, so the warning stands.
     """
 
     def __init__(self, params: ScreenParams = ScreenParams(), min_support: float = 0.5) -> None:
@@ -201,10 +225,16 @@ class ScreenTracker:
             return r
         if r.reason in (CUT_OFF, NOT_FOUND) and self.last_ok is not None:
             gray, scale = _work_gray(frame_bgr)
-            quad = self.last_ok * scale
-            if outline_support(gray, quad) >= self.min_support:
-                area_frac = cv2.contourArea(quad) / float(gray.shape[0] * gray.shape[1])
-                return _check_pixels(gray, quad, self.last_ok, area_frac, quad_aspect(quad), self.params)
+            support, offset = best_outline_shift(gray, self.last_ok * scale)
+            if support >= self.min_support:
+                quad = self.last_ok * scale + offset
+                corners = quad / scale
+                h, w = gray.shape
+                m = self.params.edge_margin_px * scale
+                if np.all((quad[:, 0] >= m) & (quad[:, 0] <= w - 1 - m) & (quad[:, 1] >= m) & (quad[:, 1] <= h - 1 - m)):
+                    self.last_ok = corners  # follow the wobble
+                    area_frac = cv2.contourArea(quad) / float(h * w)
+                    return _check_pixels(gray, quad, corners, area_frac, quad_aspect(quad), self.params)
         return r
 
 

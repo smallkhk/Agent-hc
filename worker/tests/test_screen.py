@@ -131,3 +131,18 @@ def test_tracker_still_reports_a_covered_camera():
 def test_tracker_needs_a_good_frame_first():
     covered = arm(synth.scene(synth.GOOD), synth.GOOD)
     assert s.ScreenTracker().update(covered).reason == s.detect_screen(covered).reason
+
+
+def test_tracker_follows_a_wobbling_hand_held_device():
+    t = s.ScreenTracker()
+    assert t.update(synth.scene(synth.GOOD)).ok
+    for dx, dy in ((8, -6), (14, 4), (6, 12)):  # small shifts between samples, arm over the screen
+        quad = shifted(synth.GOOD, dx=dx, dy=dy)
+        r = t.update(arm(synth.scene(quad), quad))
+        assert r.ok, (dx, dy, r)
+        assert np.abs(r.corners - np.float32(quad)).max() < 30
+
+
+def test_tilted_ipad_passes_by_default():
+    ipad = [[200, 40], [660, 50], [670, 440], [190, 430]]
+    assert s.detect_screen(synth.scene(ipad)).ok

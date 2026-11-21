@@ -77,7 +77,7 @@ def load() -> Config:
         screen=ScreenParams(
             edge_margin_px=int(_float("EDGE_MARGIN_PX", 8)),
             min_area=_float("MIN_SCREEN_AREA", 0.15),
-            aspect_min=_float("SCREEN_ASPECT_MIN", 1.3),
+            aspect_min=_float("SCREEN_ASPECT_MIN", 1.15),
             aspect_max=_float("SCREEN_ASPECT_MAX", 2.3),
             min_brightness=_float("MIN_BRIGHTNESS", 40),
         ),

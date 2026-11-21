@@ -31,6 +31,7 @@ SCREEN_TOPIC = "handcam.screen"
 STATUS_EVERY_SEC = 3.0
 RECONNECT_LOG_AFTER_SEC = 2.0
 CLIP_BEFORE_SEC = CLIP_AFTER_SEC = 10.0
+SCENE_EVENT_EVERY_SEC = 120.0
 SCENE_SETTLE_SEC = 60.0  # no "scene changed" while the player is still setting the camera up
 CLIP_FLUSH_SEC = 3.0  # fragments are written at each keyframe (every 2 s)
 
@@ -84,6 +85,7 @@ class SessionWatcher:
         self.smoother = screen_mod.CornerSmoother()
         self.tracker = screen_mod.ScreenTracker(self.cfg.screen)
         self.first_ok_at: float | None = None
+        self.last_scene_event: float | None = None
 
         self.recordings_dir = cfg.storage_dir / "recordings" / str(self.id)
         self.recorder = Recorder(self.recordings_dir, cfg.record_fps)
@@ -229,7 +231,12 @@ class SessionWatcher:
                     self.uptime_delta += period
                     events += self._screen_events(result, started)
                     events += self.loop_rule.update(looping, started, integrity.FEED_LOOPED)
-                    events += self.scene_rule.update(scene_changed, started, integrity.SCENE_CHANGED)
+                    # Logged on the dashboard only (players often hold their device and move it), at most every 2 min.
+                    if self.scene_rule.update(scene_changed, started, integrity.SCENE_CHANGED) and (
+                        self.last_scene_event is None or started - self.last_scene_event >= SCENE_EVENT_EVERY_SEC
+                    ):
+                        self.last_scene_event = started
+                        events.append(Event(integrity.SCENE_CHANGED, "info"))
                     if self.menu:
                         flagged = self.menu_rule.update(pred)
                         if flagged and flat is not None:
