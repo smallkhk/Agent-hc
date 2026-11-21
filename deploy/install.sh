@@ -3,7 +3,8 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/smallkhk/Agent-hc/claude/new-session-ij0chs/deploy/install.sh | sudo bash
 #
-# No domain needed: it uses this server's free sslip.io name (1.2.3.4 → 1-2-3-4.sslip.io, no account).
+# No domain needed: it uses this server's free sslip.io name (1.2.3.4 → handcam.1-2-3-4.sslip.io, no account),
+# so the server's plain address stays free for any other site. If port 3000 is taken, it picks a free port.
 # To use your own domain instead, add it at the end:  ... | sudo bash -s -- handcam.example.com
 #
 # Run 1 installs everything, sets up HTTPS and writes /opt/handcam/.env with generated secrets.
@@ -25,12 +26,14 @@ die() { printf '\n\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 if [ -z "$DOMAIN" ] && [ -f "$DIR/.env" ]; then # re-run: keep the address chosen the first time
   DOMAIN=$(grep -E '^PUBLIC_URL=' "$DIR/.env" | sed -E 's|^PUBLIC_URL=https?://([^/:]+).*|\1|' || true)
 fi
-if [ -z "$DOMAIN" ]; then # free name that always points at this server: 1.2.3.4 → 1-2-3-4.sslip.io
+if [ -z "$DOMAIN" ]; then # free name that always points at this server: 1.2.3.4 → handcam.1-2-3-4.sslip.io
   ip=$(curl -4 -fsS --max-time 10 https://ifconfig.me || true)
   [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "could not find this server's IPv4 address; give a domain instead"
   DOMAIN="${ip//./-}.sslip.io"
-  echo "Using the free address https://$DOMAIN"
 fi
+# the bare sslip.io name is the server's own address: keep it for other sites, use handcam.<ip>.sslip.io
+if [[ "$DOMAIN" =~ ^[0-9]+-[0-9]+-[0-9]+-[0-9]+\.sslip\.io$ ]]; then DOMAIN="handcam.$DOMAIN"; fi
+echo "Hand Cam address: https://$DOMAIN"
 [[ "$DOMAIN" =~ ^[a-zA-Z0-9.-]+$ ]] || die "'$DOMAIN' is not a domain name (no https://, no slashes)"
 
 # --- packages ----------------------------------------------------------------------------------
@@ -96,7 +99,23 @@ if [ ! -f .env ]; then
   if [ "$(nproc)" -le 2 ]; then setenv RECORD_FPS 10; fi
   echo "created $DIR/.env"
 fi
+old_url_host=$(getenv PUBLIC_URL | sed -E 's|^https?://([^/:]+).*|\1|')
 setenv PUBLIC_URL "https://$DOMAIN"
+
+# Port for the app (nginx forwards to it). Keep it unless another program already listens there.
+listeners() { ss -ltnpH "sport = :$1" 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u; }
+ours() { [ "$(readlink -f "/proc/$1/cwd" 2>/dev/null)" = "$(readlink -f "$DIR")" ]; }
+port=$(getenv PORT); port=${port:-3000}
+taken=0
+for pid in $(listeners "$port"); do ours "$pid" || taken=1; done
+if [ "$taken" = 1 ]; then
+  for p in $(seq 3100 3999); do
+    if [ -z "$(ss -ltnH "sport = :$p" 2>/dev/null)" ]; then
+      echo "port $port is used by another program: Hand Cam will use port $p"; port=$p; break
+    fi
+  done
+fi
+setenv PORT "$port"
 chmod 600 .env
 mkdir -p "$(getenv STORAGE_DIR)"
 
@@ -110,9 +129,17 @@ npm run -s db:migrate
 
 # --- HTTPS -------------------------------------------------------------------------------------
 
-site=/etc/nginx/sites-available/handcam
+# Our site file sorts last ("zz-") so it never becomes nginx's catch-all for the server's plain address;
+# it answers only on $DOMAIN and other sites on this server are left alone.
+site=/etc/nginx/sites-available/zz-handcam
+rm -f /etc/nginx/sites-enabled/handcam /etc/nginx/sites-available/handcam # name used by older versions
 mkdir -p /var/www/certbot
-# Other sites on this server (including nginx's default site) are left alone: ours answers only on $DOMAIN.
+# Older versions switched off nginx's default site. If it serves a real site (not the nginx welcome page), restore it.
+if [ -f /etc/nginx/sites-available/default ] && [ ! -e /etc/nginx/sites-enabled/default ] &&
+   [ -n "$(find /var/www/html -mindepth 1 ! -name 'index.nginx-debian.html' 2>/dev/null | head -1)" ]; then
+  ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+  if nginx -t -q 2>/dev/null; then echo "restored your existing site (nginx default site)"; else rm -f /etc/nginx/sites-enabled/default; fi
+fi
 if [ "$SKIP_TLS" = 1 ]; then
   step "HTTPS skipped (HANDCAM_SKIP_TLS=1)"
 elif [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
@@ -126,7 +153,7 @@ Point the domain at $my_ip, wait a few minutes, then run this again."
   # temporary plain-HTTP site so Let's Encrypt can check the domain
   printf 'server {\n  listen 80;\n  server_name %s;\n  location /.well-known/acme-challenge/ { root /var/www/certbot; }\n}\n' \
     "$DOMAIN" > "$site"
-  ln -sf "$site" /etc/nginx/sites-enabled/handcam
+  ln -sf "$site" /etc/nginx/sites-enabled/zz-handcam
   nginx -t -q || die "nginx rejected its config (see above)"
   systemctl reload nginx
   certbot certonly --webroot -w /var/www/certbot -d "$DOMAIN" -n --agree-tos --register-unsafely-without-email \
@@ -136,11 +163,16 @@ If it says 'too many certificates', Let's Encrypt's weekly quota for $DOMAIN's p
 by other people: wait a few hours and run this command again. Everything else is already installed."
 fi
 if [ "$SKIP_TLS" != 1 ]; then
-  sed "s/handcam.example.com/$DOMAIN/g" deploy/nginx/handcam.conf > "$site"
+  sed -e "s/handcam.example.com/$DOMAIN/g" -e "s/127.0.0.1:3000/127.0.0.1:$port/" deploy/nginx/handcam.conf > "$site"
   if [ ! -s /proc/net/if_inet6 ]; then sed -i '/listen \[::\]/d' "$site"; fi # no IPv6 on this server
-  ln -sf "$site" /etc/nginx/sites-enabled/handcam
+  ln -sf "$site" /etc/nginx/sites-enabled/zz-handcam
   nginx -t -q || die "nginx rejected its config (see above)"
   systemctl reload nginx
+  # moved to a new address: drop our old certificate unless another site still uses it
+  if [ -n "$old_url_host" ] && [ "$old_url_host" != "$DOMAIN" ] && [ -d "/etc/letsencrypt/live/$old_url_host" ] &&
+     ! grep -rqs "live/$old_url_host/" /etc/nginx/sites-enabled/ /etc/nginx/conf.d/; then
+    certbot delete -n --cert-name "$old_url_host" >/dev/null 2>&1 && echo "removed the old certificate for $old_url_host"
+  fi
 fi
 if command -v ufw >/dev/null && ufw status | grep -q "Status: active"; then
   ufw allow OpenSSH >/dev/null && ufw allow 'Nginx Full' >/dev/null
@@ -167,6 +199,10 @@ EOF
 fi
 
 step "Starting bot, API and vision worker"
+# stop a manual preview of the API (started by hand from $DIR, not by PM2) so PM2 can take the port
+for pid in $(listeners "$port"); do
+  if ours "$pid" && ! tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | grep -q '^pm_id='; then kill "$pid"; fi
+done
 npm run -s bot:deploy || die "Discord rejected the bot login: check DISCORD_TOKEN and DISCORD_CLIENT_ID in $DIR/.env"
 pm2 startOrReload deploy/ecosystem.config.cjs --update-env
 pm2 save
