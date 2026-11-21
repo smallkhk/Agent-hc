@@ -8,7 +8,6 @@ from pathlib import Path
 
 from worker.detect.screen import ScreenParams
 
-DEFAULT_LLM_MODEL = {"claude": "claude-opus-5-5", "gemini": "gemini-3.5-flash-lite"}
 
 
 def _env(name: str, default: str | None = None) -> str:
@@ -37,7 +36,6 @@ class Config:
     menu_model: Path
     menu_shadow: bool
     llm_enabled: bool
-    llm_provider: str
     llm_api_key: str | None
     llm_model: str
     llm_min_interval_sec: float
@@ -76,9 +74,8 @@ def load() -> Config:
         # Shadow mode: menu flags are stored as info events (no alert) until the model is trusted.
         menu_shadow=_env("MENU_SHADOW", "true").lower() != "false",
         llm_enabled=_env("LLM_SECOND_OPINION", "false").lower() == "true",
-        llm_provider=_env("LLM_PROVIDER", "claude").lower(),
         llm_api_key=os.environ.get("LLM_API_KEY") or None,
-        llm_model=_env("LLM_MODEL", DEFAULT_LLM_MODEL.get(_env("LLM_PROVIDER", "claude").lower(), "claude-opus-5-5")),
+        llm_model=_env("LLM_MODEL", "gemini-3.5-flash-lite"),
         llm_min_interval_sec=_float("LLM_MIN_INTERVAL_SEC", 60),
         # A confident "not a cheat" second opinion marks the alert a false positive (admins can overrule).
         llm_auto_dismiss=_env("LLM_AUTO_DISMISS", "true").lower() != "false",

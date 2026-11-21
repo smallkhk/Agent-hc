@@ -20,7 +20,7 @@ from worker.config import Config
 from worker.detect import integrity
 from worker.detect import screen as screen_mod
 from worker.detect.menu import MenuClassifier, MenuRule, Prediction, flatten_screen
-from worker.llm import GeminiOpinion, SecondOpinion
+from worker.llm import SecondOpinion
 from worker.record.recorder import Recorder, cut_clip, list_chunks
 from worker.rules import EscalatingRule, Event
 
@@ -64,7 +64,7 @@ def frame_to_bgr(frame: rtc.VideoFrame) -> np.ndarray:
 
 class SessionWatcher:
     def __init__(self, info: dict[str, Any], cfg: Config, client: ApiClient,
-                 menu: MenuClassifier | None = None, llm: SecondOpinion | GeminiOpinion | None = None) -> None:
+                 menu: MenuClassifier | None = None, llm: SecondOpinion | None = None) -> None:
         self.id: int = info["id"]
         self.room_name: str = info["room"]
         self.cfg = cfg

@@ -81,11 +81,10 @@ The vision worker checks every live cam twice a second and posts to the alert ch
 | Mod menu / ESP / unknown overlay on screen | needs a trained model, see [training/README.md](training/README.md). Starts in shadow mode: logged, no alert, until `MENU_SHADOW=false` |
 
 **AI second opinion (optional, off by default):** with `LLM_SECOND_OPINION=true`, each hack-menu flag also sends the
-flattened screen to a vision model, which judges it and gives a reason (e.g. `hack_menu (90%): toggle list with aimbot…`),
-shown on the Discord alert and the dashboard. At most one request per player every `LLM_MIN_INTERVAL_SEC`.
-- **Gemini (free tier):** `LLM_PROVIDER=gemini`, key from aistudio.google.com in `LLM_API_KEY`; model `gemini-3.5-flash-lite`
-  unless `LLM_MODEL` says otherwise. Free-tier requests are rate-limited per Google project.
-- **Claude (paid API credits):** `LLM_PROVIDER=claude`, Anthropic API key in `LLM_API_KEY`; model `claude-opus-5-5`.
+flattened screen to Gemini (`LLM_MODEL`, default `gemini-3.5-flash-lite`; free-tier key from aistudio.google.com in
+`LLM_API_KEY`), which judges it and gives a reason (e.g. `hack_menu (90%): toggle list with aimbot…`), shown on the Discord
+alert and the dashboard. At most one request per player every `LLM_MIN_INTERVAL_SEC`; free-tier requests are rate-limited
+per Google project. Only flagged frames are sent, never the live video.
 
 With `LLM_AUTO_DISMISS=true` (default), a verdict of normal gameplay or a CODM menu with confidence ≥
 `LLM_DISMISS_CONFIDENCE` (0.85) marks the alert **False positive · 🤖 AI check**. The buttons stay, so an admin can overrule

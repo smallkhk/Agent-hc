@@ -9,7 +9,7 @@ import signal
 from worker import config as config_mod
 from worker.api_client import ApiClient
 from worker.detect.menu import MenuClassifier
-from worker.llm import make_second_opinion
+from worker.llm import SecondOpinion
 from worker.session import SessionWatcher
 
 log = logging.getLogger("worker")
@@ -21,8 +21,7 @@ class Supervisor:
         self.client = ApiClient(self.cfg)
         self.menu = MenuClassifier.load(self.cfg.menu_model)  # one ONNX session for every watcher
         self.llm = (
-            make_second_opinion(self.cfg.llm_provider, self.cfg.llm_api_key, self.cfg.llm_model,
-                                self.cfg.llm_min_interval_sec)
+            SecondOpinion(self.cfg.llm_api_key, self.cfg.llm_model, self.cfg.llm_min_interval_sec)
             if self.cfg.llm_enabled else None
         )
         self.watchers: dict[int, tuple[SessionWatcher, asyncio.Task[None]]] = {}
