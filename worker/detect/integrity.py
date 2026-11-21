@@ -118,13 +118,17 @@ class LoopDetector:
 class SceneChangeDetector:
     """Sudden change of everything around the screen (other room, other device), confirmed over a few samples.
 
-    Slow drift (light changing, camera nudged) follows the reference instead of firing.
+    Slow drift (light changing, camera nudged) follows the reference instead of firing. Hands and arms
+    move around the device all the time, so a changed background only counts when the screen itself has
+    also jumped to another place in the picture: a camera or device swap moves it, moving hands do not.
     """
 
-    def __init__(self, max_bits: int = 22, confirm: int = 4) -> None:
+    def __init__(self, max_bits: int = 22, confirm: int = 4, min_shift: float = 0.05) -> None:
         self.max_bits = max_bits
         self.confirm = confirm
+        self.min_shift = min_shift  # screen movement, as a fraction of its diagonal
         self.ref: int | None = None
+        self.ref_corners: np.ndarray | None = None
         self.pending = 0
 
     @staticmethod
@@ -134,13 +138,20 @@ class SceneChangeDetector:
             cv2.fillConvexPoly(gray, corners.astype(np.int32), int(gray.mean()))
         return gray
 
+    def _screen_moved(self, corners: np.ndarray | None) -> bool:
+        if corners is None or self.ref_corners is None:
+            return True
+        diag = float(np.linalg.norm(self.ref_corners[0] - self.ref_corners[2])) or 1.0
+        return float(np.abs(corners - self.ref_corners).max()) > self.min_shift * diag
+
     def update(self, frame_bgr: np.ndarray, corners: np.ndarray | None) -> bool:
         h = phash(self.background(frame_bgr, corners))
         if self.ref is None or int(hamming(h, self.ref)) <= self.max_bits:
-            self.ref, self.pending = h, 0
+            self.ref, self.ref_corners, self.pending = h, corners, 0
             return False
         self.pending += 1
         if self.pending >= self.confirm:
-            self.ref, self.pending = h, 0
-            return True
+            moved = self._screen_moved(corners)
+            self.ref, self.ref_corners, self.pending = h, corners, 0
+            return moved  # background changed but the screen stayed put: hands, not a swap
         return False

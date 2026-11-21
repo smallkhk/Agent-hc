@@ -77,10 +77,27 @@ def test_scene_change():
     rng = np.random.default_rng(0)
     corners = np.float32(synth.GOOD)
     room_a = [camera(f, rng) for f in gameplay(20, seed=1)]
+    # another room: different desk, and the device sits elsewhere in the picture
     rng_b = np.random.default_rng(42)
     other_desk = synth.desk(rng_b, level=150)
-    room_b = [camera(synth.place(other_desk, synth.device(np.full((370, 800, 3), 120, np.uint8)), corners), rng)
+    moved = corners + np.float32([60, -40])
+    room_b = [camera(synth.place(other_desk, synth.device(np.full((370, 800, 3), 120, np.uint8)), moved), rng)
               for _ in range(10)]
-    hits = [det.update(f, corners) for f in room_a + room_b]
+    hits = [det.update(f, corners) for f in room_a] + [det.update(f, moved) for f in room_b]
     assert not any(hits[:20])  # game content changing inside the screen doesn't count
     assert sum(hits) == 1 and hits.index(True) >= 20
+
+
+def test_moving_hands_are_not_a_scene_change():
+    det = SceneChangeDetector()
+    rng = np.random.default_rng(0)
+    corners = np.float32(synth.GOOD)
+    frames = []
+    for i, f in enumerate(gameplay(40, seed=1)):
+        img = camera(f, rng)
+        if i >= 10:  # big arms swinging in and out around the device
+            x = 80 + (i * 97) % 600
+            cv2.line(img, (x, synth.H - 1), (x + 120, 300), (70, 95, 140), 110)
+            cv2.circle(img, (40 + (i * 53) % 700, 30), 70, (80, 105, 150), -1)
+        frames.append(img)
+    assert not any(det.update(f, corners) for f in frames)
