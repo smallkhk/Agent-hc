@@ -99,7 +99,6 @@ if [ ! -f .env ]; then
   if [ "$(nproc)" -le 2 ]; then setenv RECORD_FPS 10; fi
   echo "created $DIR/.env"
 fi
-old_url_host=$(getenv PUBLIC_URL | sed -E 's|^https?://([^/:]+).*|\1|')
 setenv PUBLIC_URL "https://$DOMAIN"
 
 # Port for the app (nginx forwards to it). Keep it unless another program already listens there.
@@ -168,11 +167,6 @@ if [ "$SKIP_TLS" != 1 ]; then
   ln -sf "$site" /etc/nginx/sites-enabled/zz-handcam
   nginx -t -q || die "nginx rejected its config (see above)"
   systemctl reload nginx
-  # moved to a new address: drop our old certificate unless another site still uses it
-  if [ -n "$old_url_host" ] && [ "$old_url_host" != "$DOMAIN" ] && [ -d "/etc/letsencrypt/live/$old_url_host" ] &&
-     ! grep -rqs "live/$old_url_host/" /etc/nginx/sites-enabled/ /etc/nginx/conf.d/; then
-    certbot delete -n --cert-name "$old_url_host" >/dev/null 2>&1 && echo "removed the old certificate for $old_url_host"
-  fi
 fi
 if command -v ufw >/dev/null && ufw status | grep -q "Status: active"; then
   ufw allow OpenSSH >/dev/null && ufw allow 'Nginx Full' >/dev/null
