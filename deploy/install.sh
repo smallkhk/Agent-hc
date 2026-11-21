@@ -26,8 +26,9 @@ die() { printf '\n\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 step "System packages (a few minutes)"
 apt-get update -q
-apt-get install -y -q git curl ca-certificates openssl nginx certbot ffmpeg mysql-server redis-server \
-  software-properties-common htop
+PKGS=(git curl ca-certificates openssl nginx certbot ffmpeg mysql-server redis-server software-properties-common htop)
+# a package's setup step can trip once (e.g. MySQL's first start); finish it and retry once
+apt-get install -y -q "${PKGS[@]}" || { sleep 5; dpkg --configure -a; apt-get install -y -q "${PKGS[@]}"; }
 # Ubuntu 22.04's own python3.11 is a release candidate and 24.04 has none: use the deadsnakes build.
 if ! grep -rqs deadsnakes /etc/apt/sources.list.d/; then add-apt-repository -y ppa:deadsnakes/ppa; fi
 apt-get install -y -q python3.11 python3.11-venv
