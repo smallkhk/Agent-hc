@@ -144,7 +144,93 @@
     }, retryDelay);
   }
 
+  // --- voice alerts: the player watches the game, not this page -----------------------------
+  const SAY = {
+    SCREEN_CUT_OFF: 'Your screen is going out of the camera. Move it back inside the box.',
+    SCREEN_NOT_FOUND: "The camera can't see your screen. Point the camera at your game.",
+    SCREEN_TOO_SMALL: 'Your screen is too far away. Move the camera closer.',
+    SCREEN_DARK: 'Your screen is too dark. Turn up the brightness.',
+    GLARE: 'There is glare on your screen. Tilt the camera a little.',
+  };
+  const SAY_AFTER_MS = { GLARE: 10_000 }; // others after 3 s: quick blips stay quiet
+  const REPEAT_MS = 15_000;
+  const voice = { on: store.get('hc_sound') !== 'off', ctx: null, code: null, badSince: 0, lastSaid: 0, alerted: false };
+
+  function unlockAudio() {
+    // Phones only allow sound after a tap: call this from the Go live / sound button handlers.
+    try {
+      voice.ctx ||= new (window.AudioContext || window.webkitAudioContext)();
+      voice.ctx.resume();
+    } catch {
+      // no Web Audio: speech alone
+    }
+    if ('speechSynthesis' in window) speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+  }
+
+  function beep(freqs) {
+    const ctx = voice.ctx;
+    if (!ctx) return;
+    let t = ctx.currentTime;
+    for (const f of freqs) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.22);
+      t += 0.24;
+    }
+  }
+
+  function say(text) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    setTimeout(() => speechSynthesis.speak(u), 500); // after the beep
+  }
+
+  function voiceStatus(status) {
+    const code = status?.ok === false ? status.code || 'SCREEN_NOT_FOUND' : null;
+    if (code && code !== voice.code) {
+      if (!voice.code) voice.badSince = Date.now();
+      voice.code = code;
+      voice.lastSaid = 0; // a different problem: say the new instruction
+    } else if (!code && voice.code) {
+      if (voice.alerted && voice.on) {
+        beep([660, 880]);
+        say('Good. Your screen is back in the box.');
+      }
+      voice.code = null;
+      voice.alerted = false;
+    }
+  }
+
+  function voiceTick() {
+    if (!voice.on || !voice.code) return;
+    const now = Date.now();
+    if (now - voice.badSince < (SAY_AFTER_MS[voice.code] ?? 3000)) return;
+    if (now - voice.lastSaid < REPEAT_MS) return;
+    voice.alerted = true;
+    voice.lastSaid = now;
+    beep([880, 620]);
+    navigator.vibrate?.([200, 100, 200]);
+    say(SAY[voice.code] || 'Fit your whole screen inside the box.');
+  }
+
+  function setSound(on) {
+    voice.on = on;
+    store.set('hc_sound', on ? 'on' : 'off');
+    $('sound').setAttribute('aria-pressed', String(on));
+    $('sound').querySelector('use').setAttribute('href', on ? '#i-sound' : '#i-mute');
+    if (!on && 'speechSynthesis' in window) speechSynthesis.cancel();
+  }
+
   function setGuide(status) {
+    voiceStatus(status);
     const guide = $('guide');
     guide.classList.toggle('ok', status?.ok === true);
     guide.classList.toggle('bad', status?.ok === false);
@@ -216,6 +302,7 @@
 
   $('go').addEventListener('click', async () => {
     $('go').disabled = true;
+    unlockAudio();
     res = radios().find((r) => r.checked)?.value || '480p';
     store.set('hc_res', res);
     try {
@@ -232,6 +319,8 @@
     track.attach($('preview'));
     setupTorch();
     keepAwake();
+    setSound(voice.on);
+    setInterval(voiceTick, 1000);
     setInterval(updateDataUsed, STATS_EVERY_MS);
     setInterval(reportDataUsed, REPORT_EVERY_MS);
     try {
@@ -251,6 +340,15 @@
     facing = facing === 'environment' ? 'user' : 'environment';
     await track.restartTrack({ facingMode: facing, resolution: PRESETS[res].resolution });
     setupTorch();
+  });
+
+  $('sound').addEventListener('click', () => {
+    setSound(!voice.on);
+    if (voice.on) {
+      unlockAudio();
+      beep([660, 880]);
+      say('Voice alerts on.');
+    }
   });
 
   $('torch').addEventListener('click', async () => {

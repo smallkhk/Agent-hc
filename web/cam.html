@@ -16,6 +16,8 @@
     <symbol id="i-frame" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V4h4M17 4h4v4M21 16v4h-4M7 20H3v-4"/><rect x="7" y="8" width="10" height="8" rx="1"/></g></symbol>
     <symbol id="i-bolt" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="15" height="12" rx="2"/><path d="M21 10v4M8 9l-1.5 3H11l-1.5 3"/></g></symbol>
     <symbol id="i-flip" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><path d="M9.5 13a2.5 2.5 0 0 1 4.5-1.5M14.5 13a2.5 2.5 0 0 1-4.5 1.5M14 9.5v2h-2M10 16.5v-2h2"/></g></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></g></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></g></symbol>
     <symbol id="i-torch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v4l-2 3v11h-4V10L8 7z"/><path d="M8 7h8M12 14v2"/></g></symbol>
     <symbol id="i-data" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></g></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></g></symbol>
@@ -106,7 +108,7 @@
     <div id="reconnect" class="toast" hidden><span class="spinner"></span>Connection lost. Reconnecting…</div>
 
     <footer class="hud hud-bottom">
-      <p class="hint">Keep this page open · device plugged in</p>
+      <p class="hint">Keep this page open · device plugged in · sound on for voice alerts</p>
       <div class="controls">
         <button id="flip" type="button" class="icon-btn" aria-label="Switch camera" title="Switch camera"><svg><use href="#i-flip"/></svg></button>
         <label class="quality-pick" title="Quality">
@@ -117,6 +119,7 @@
             <option value="720p">720p</option>
           </select>
         </label>
+        <button id="sound" type="button" class="icon-btn" aria-label="Voice alerts" title="Voice alerts" aria-pressed="true"><svg><use href="#i-sound"/></svg></button>
         <button id="torch" type="button" class="icon-btn" aria-label="Torch" title="Torch" aria-pressed="false" hidden><svg><use href="#i-torch"/></svg></button>
       </div>
     </footer>

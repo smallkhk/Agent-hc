@@ -357,7 +357,7 @@ class SessionWatcher:
         if hint == self.last_hint and now - self.last_hint_at < STATUS_EVERY_SEC:
             return
         self.last_hint, self.last_hint_at = hint, now
-        payload = json.dumps({"ok": r.ok, "reason": PLAYER_HINTS.get(r.reason or "")})
+        payload = json.dumps({"ok": r.ok, "code": r.reason, "reason": PLAYER_HINTS.get(r.reason or "")})
         try:
             await self.room.local_participant.publish_data(
                 payload, reliable=True, topic=SCREEN_TOPIC, destination_identities=[PLAYER]
