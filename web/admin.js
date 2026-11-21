@@ -337,5 +337,20 @@
     setInterval(loadSessions, 15_000);
   }
 
-  start().catch((err) => console.error(err));
+  // The server answers 404 here until the Discord login is configured: show the login page with a setup note.
+  function showSetupNeeded() {
+    showLogin();
+    const btn = document.querySelector('.login-card .btn-discord');
+    btn.removeAttribute('href');
+    btn.setAttribute('aria-disabled', 'true');
+    btn.classList.add('is-disabled');
+    document.querySelector('.login-card .fine').textContent =
+      'Dashboard not set up yet: add DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET and DISCORD_TOKEN to the server settings, then restart.';
+  }
+
+  start().catch((err) => {
+    console.error(err);
+    if (/HTTP 404/.test(err.message)) showSetupNeeded();
+    else showLogin();
+  });
 })();
