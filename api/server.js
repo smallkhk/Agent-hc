@@ -31,6 +31,8 @@ app.get('/api/brand', (_req, res) => {
     accent: config.BRAND_ACCENT || null,
     logoUrl: config.BRAND_LOGO_URL || null,
     bgUrl: config.BRAND_BG_URL || null,
+    discordUrl: config.BRAND_DISCORD_URL || null,
+    retentionDays: config.RETENTION_DAYS,
   });
 });
 app.use('/api/cam', camRouter);

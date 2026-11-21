@@ -1,5 +1,6 @@
 // Applies BRAND_NAME / BRAND_ACCENT / BRAND_LOGO_URL from /api/brand to any page that includes it.
-// Elements: [data-brand-name], [data-brand-tagline], .brand-mark (logo replaces the default mark).
+// Elements: [data-brand-name], [data-brand-tagline], .brand-mark (logo replaces the default mark),
+// [data-discord] (shown and linked when BRAND_DISCORD_URL is set), [data-retention-days].
 window.brandReady = (async () => {
   'use strict';
   let brand = { name: 'HANDCAM', tagline: 'Match integrity check', theme: 'ranger', accent: null, logoUrl: null };
@@ -19,6 +20,12 @@ window.brandReady = (async () => {
   }
   for (const el of document.querySelectorAll('[data-brand-name]')) el.textContent = brand.name;
   for (const el of document.querySelectorAll('[data-brand-tagline]')) el.textContent = brand.tagline;
+  for (const el of document.querySelectorAll('[data-retention-days]')) el.textContent = brand.retentionDays ?? 7;
+  for (const el of document.querySelectorAll('[data-discord]')) {
+    if (!brand.discordUrl) continue;
+    el.href = brand.discordUrl;
+    el.hidden = false;
+  }
   if (brand.bgUrl) root.setProperty('--brand-bg', `url("${encodeURI(brand.bgUrl)}")`);
   if (brand.logoUrl) {
     for (const mark of document.querySelectorAll('.brand-mark')) {

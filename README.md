@@ -48,6 +48,7 @@ Players and admins see your name, colours and logo, not "HANDCAM". In `.env`:
 - `BRAND_ACCENT` (optional hex colour) replaces the theme's accent colour.
 - `BRAND_LOGO_URL`: put the file in `web/brand/`, then use `/brand/logo.png`.
 - `BRAND_BG_URL` (optional, e.g. `/brand/bg.jpg`) puts your own art faintly behind the pages.
+- `BRAND_DISCORD_URL` (optional): your community's Discord invite; shows "Join our Discord" on the homepage.
 
 The built-in photos are public-domain US military photos, and the icons are Tabler (MIT); see
 [web/art/CREDITS.md](web/art/CREDITS.md). Use art you own or have permission for: official game logos and art belong to

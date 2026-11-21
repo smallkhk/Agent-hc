@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#15190f">
+  <meta name="description" content="AI-checked hand cams for Call of Duty: Mobile lobbies. No app to install: point a second phone at your game and play.">
+  <title>Hand Cam</title>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="home.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-mark" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+  </svg>
+
+  <header class="nav-bar" id="top">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top"><span class="brand-mark"><svg><use href="#i-mark"/></svg></span><span class="brand-name" data-brand-name>HANDCAM</span></a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#how">How it works</a>
+        <a href="#checks">What's checked</a>
+        <a href="#ready">Get ready</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a class="btn btn-ghost nav-admin" href="/admin.html"><svg class="i"><use href="/art/icons.svg#ti-layout-dashboard"/></svg>Admin</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero photo">
+      <div class="wrap hero-inner">
+        <p class="label eyebrow" data-brand-tagline>Match integrity check</p>
+        <h1 class="display">Fair matches.<br><em>Every hand</em> on camera.</h1>
+        <p class="lead">AI-checked hand cams for Call of Duty: Mobile lobbies. Point a second phone at your game, tap Go live, and play. Admins see every hand cam live and make the call.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="#how"><svg class="i"><use href="/art/icons.svg#ti-scan"/></svg>How it works</a>
+          <a class="btn btn-discord btn-lg" data-discord hidden href="#"><svg class="i"><use href="/art/icons.svg#ti-brand-discord"/></svg>Join our Discord</a>
+        </div>
+        <ul class="hero-facts">
+          <li><svg class="i"><use href="/art/icons.svg#ti-device-mobile"/></svg>No app to install</li>
+          <li><svg class="i"><use href="/art/icons.svg#ti-eye"/></svg>AI watches every frame</li>
+          <li><svg class="i"><use href="/art/icons.svg#ti-shield-check"/></svg>Humans make the final call</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how">
+      <div class="wrap">
+        <p class="label eyebrow">Briefing</p>
+        <h2 class="display section-title">How it works</h2>
+        <ol class="steps-grid">
+          <li class="panel step-card">
+            <span class="step-no">01</span>
+            <svg class="step-icon"><use href="/art/icons.svg#ti-brand-discord"/></svg>
+            <h3>Get your link</h3>
+            <p>An admin starts your check in Discord, or you use <code>/handcam join</code>. The bot sends you a private, one-time link.</p>
+          </li>
+          <li class="panel step-card">
+            <span class="step-no">02</span>
+            <svg class="step-icon"><use href="/art/icons.svg#ti-device-mobile"/></svg>
+            <h3>Set up the camera</h3>
+            <p>Open the link on a <strong>second</strong> phone, tablet or laptop webcam. Fit your whole game screen inside the brackets and tap <strong>Go live</strong>.</p>
+          </li>
+          <li class="panel step-card">
+            <span class="step-no">03</span>
+            <svg class="step-icon"><use href="/art/icons.svg#ti-crosshair"/></svg>
+            <h3>Play your match</h3>
+            <p>Play as normal. If your screen slips out of view, the camera phone tells you out loud how to fix it.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- What gets checked -->
+    <section class="section section-alt" id="checks">
+      <div class="wrap">
+        <p class="label eyebrow">Rules of engagement</p>
+        <h2 class="display section-title">What gets checked</h2>
+        <div class="checks-grid">
+          <article class="check">
+            <svg class="check-icon"><use href="/art/icons.svg#ti-scan"/></svg>
+            <h3>Whole screen in view</h3>
+            <p>Your entire game screen stays inside the camera for the full match. Hands on the screen are fine.</p>
+          </article>
+          <article class="check">
+            <svg class="check-icon"><use href="/art/icons.svg#ti-target-arrow"/></svg>
+            <h3>No mod menus or ESP</h3>
+            <p>Cheat menus, wallhack boxes, snap lines, aim circles and cheat watermarks are flagged.</p>
+          </article>
+          <article class="check">
+            <svg class="check-icon"><use href="/art/icons.svg#ti-player-record"/></svg>
+            <h3>A real, live feed</h3>
+            <p>Frozen, looped or pre-recorded video is detected. The camera has to show what's really happening.</p>
+          </article>
+          <article class="check">
+            <svg class="check-icon"><use href="/art/icons.svg#ti-broadcast"/></svg>
+            <h3>Stay connected</h3>
+            <p>Keep the cam page open until the match ends. It reconnects by itself if your connection drops.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Get ready -->
+    <section class="section" id="ready">
+      <div class="wrap ready-grid">
+        <div>
+          <p class="label eyebrow">Loadout</p>
+          <h2 class="display section-title">Before your match</h2>
+          <ul class="checklist">
+            <li><svg class="i"><use href="/art/icons.svg#ti-check"/></svg><span><strong>A second device:</strong> any phone, tablet or laptop webcam. Not the one you play on.</span></li>
+            <li><svg class="i"><use href="/art/icons.svg#ti-check"/></svg><span><strong>Plugged in</strong> and on Wi-Fi if you can.</span></li>
+            <li><svg class="i"><use href="/art/icons.svg#ti-check"/></svg><span><strong>Volume up</strong> on the camera phone for voice alerts.</span></li>
+            <li><svg class="i"><use href="/art/icons.svg#ti-check"/></svg><span><strong>Good light,</strong> no bright lamp reflecting on your screen.</span></li>
+            <li><svg class="i"><use href="/art/icons.svg#ti-check"/></svg><span>Works in the browser on <strong>iPhone, Android and laptops</strong>.</span></li>
+          </ul>
+        </div>
+        <div class="panel data-card">
+          <h3 class="label">Data per 30-minute match</h3>
+          <table class="data-table">
+            <tr><th>Saver</th><td>360p</td><td class="num">~70 MB</td></tr>
+            <tr><th>Standard</th><td>480p</td><td class="num">~110 MB</td></tr>
+            <tr><th>HD</th><td>720p</td><td class="num">~270 MB</td></tr>
+          </table>
+          <p class="fine">Standard is the default. The cam page shows data used as you play.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacy and fairness -->
+    <section class="section trust-band photo">
+      <div class="wrap trust-inner">
+        <p class="label eyebrow">Fair play, both ways</p>
+        <h2 class="display section-title">Your privacy, a fair hearing</h2>
+        <div class="trust-grid">
+          <div><svg class="i"><use href="/art/icons.svg#ti-eye"/></svg><h3>Only the camera</h3><p>We see what the camera sees and nothing else. No access to your phone, files or account.</p></div>
+          <div><svg class="i"><use href="/art/icons.svg#ti-clock"/></svg><h3>Deleted after <span data-retention-days>7</span> days</h3><p>Recordings are only used to check your match. Clean ones are deleted automatically.</p></div>
+          <div><svg class="i"><use href="/art/icons.svg#ti-users-group"/></svg><h3>A human decides</h3><p>The AI only flags. An admin reviews every flag with the clip. No automatic bans.</p></div>
+          <div><svg class="i"><use href="/art/icons.svg#ti-shield-check"/></svg><h3>One link, one device</h3><p>Your link works once, on one device, and expires. Nobody else can stream as you.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="wrap faq-wrap">
+        <p class="label eyebrow">Intel</p>
+        <h2 class="display section-title">Questions</h2>
+        <div class="faq">
+          <details><summary>My screen keeps going out of frame. What do I do?<svg class="i"><use href="/art/icons.svg#ti-chevron-down"/></svg></summary>
+            <p>Move the camera back or a little further away until your whole screen fits inside the brackets; they turn green when it's right. The camera phone also tells you out loud what to fix.</p></details>
+          <details><summary>Can I use my laptop webcam?<svg class="i"><use href="/art/icons.svg#ti-chevron-down"/></svg></summary>
+            <p>Yes. Open the link in a browser on the laptop and point the webcam at your game screen.</p></details>
+          <details><summary>Do I need to install anything?<svg class="i"><use href="/art/icons.svg#ti-chevron-down"/></svg></summary>
+            <p>No. The cam page runs in Safari, Chrome and other modern browsers. Allow camera access when asked.</p></details>
+          <details><summary>Can it see my phone's files or messages?<svg class="i"><use href="/art/icons.svg#ti-chevron-down"/></svg></summary>
+            <p>No. It only receives the video from the camera you point at your game screen.</p></details>
+          <details><summary>What if I get flagged by mistake?<svg class="i"><use href="/art/icons.svg#ti-chevron-down"/></svg></summary>
+            <p>Every flag goes to a human admin with a snapshot and a short clip. If it's wrong, they mark it as a false positive and nothing happens to you.</p></details>
+          <details><summary>My hands cover the screen while I play. Is that a problem?<svg class="i"><use href="/art/icons.svg#ti-chevron-down"/></svg></summary>
+            <p>No. Fingers and thumbs on the screen are normal and expected. Just keep the edges of the screen in view.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="#top"><span class="brand-mark"><svg><use href="#i-mark"/></svg></span><span class="brand-name" data-brand-name>HANDCAM</span></a>
+      <nav class="footer-links" aria-label="Links">
+        <a data-discord hidden href="#"><svg class="i"><use href="/art/icons.svg#ti-brand-discord"/></svg>Discord</a>
+        <a href="/admin.html"><svg class="i"><use href="/art/icons.svg#ti-layout-dashboard"/></svg>Admin login</a>
+      </nav>
+      <p class="fine">Not affiliated with Activision or Call of Duty.</p>
+    </div>
+  </footer>
+
+  <script src="brand.js"></script>
+</body>
+</html>
