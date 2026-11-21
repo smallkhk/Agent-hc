@@ -18,7 +18,7 @@ import {
   rememberAlertMessage,
   subscribe,
 } from '../api/lib/bus.js';
-import { getEvent } from '../api/lib/events.js';
+import { AI_ADMIN_ID, getEvent } from '../api/lib/events.js';
 import { RESOLVED_CHANNEL, resolveAlert } from '../api/lib/resolve.js';
 import { getGuildConfig } from '../api/lib/guildConfig.js';
 import { COLORS } from './embeds.js';
@@ -47,9 +47,10 @@ const RESOLVED_TEXT = {
 };
 
 function resolvedEmbed(message, action, adminId, via = '') {
+  const by = adminId === AI_ADMIN_ID ? '🤖 AI check (an admin can still overrule it)' : `<@${adminId}>${via}`;
   return EmbedBuilder.from(message.embeds[0])
     .setColor(action === 'confirmed' ? COLORS.bad : COLORS.idle)
-    .addFields({ name: 'Resolved', value: `${RESOLVED_TEXT[action]} by <@${adminId}>${via}` });
+    .addFields({ name: 'Resolved', value: `${RESOLVED_TEXT[action]} by ${by}` });
 }
 
 async function storedFile(rel) {
@@ -160,7 +161,7 @@ async function markResolved(client, { eventId, action, adminId }) {
   if (!message) return;
   await message.edit({
     embeds: [resolvedEmbed(message, action, adminId, ' (dashboard)')],
-    components: [],
+    components: adminId === AI_ADMIN_ID ? message.components : [], // keep the buttons so admins can overrule
     allowedMentions: { parse: [] },
   });
 }

@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import { pool } from '../db.js';
 import { CLIPS_CHANNEL, DASHBOARD_CHANNEL, EVENTS_CHANNEL, isMuted, LLM_CHANNEL, publish } from '../lib/bus.js';
+import { AI_ADMIN_ID, resolveEvent } from '../lib/events.js';
 import { getGuildConfig } from '../lib/guildConfig.js';
+import { RESOLVED_CHANNEL } from '../lib/resolve.js';
 import { roomName } from '../lib/livekit.js';
 import { hashMatches, sha256 } from '../lib/tokens.js';
 
@@ -164,7 +166,8 @@ internalRouter.post('/events/:id/clip', async (req, res, next) => {
   }
 });
 
-const llmBody = z.object({ verdict: z.string().min(1).max(500) });
+// dismiss: the AI check is confident this flag is not a cheat → resolve it as a false positive.
+const llmBody = z.object({ verdict: z.string().min(1).max(500), dismiss: z.boolean().optional() });
 
 internalRouter.post('/events/:id/llm', async (req, res, next) => {
   const eventId = Number(req.params.id);
@@ -174,6 +177,9 @@ internalRouter.post('/events/:id/llm', async (req, res, next) => {
     const [r] = await pool.query('UPDATE events SET llm_verdict = ? WHERE id = ?', [body.data.verdict, eventId]);
     if (!r.affectedRows) return res.status(404).json({ error: 'Unknown event.' });
     await publish({ eventId }, LLM_CHANNEL);
+    if (body.data.dismiss && (await resolveEvent(eventId, 'false_positive', AI_ADMIN_ID))) {
+      await publish({ eventId, action: 'false_positive', adminId: AI_ADMIN_ID }, RESOLVED_CHANNEL);
+    }
     res.status(204).end();
   } catch (err) {
     next(err);

@@ -222,8 +222,13 @@
         ? `<a href="${media(e.framePath)}" target="_blank" rel="noopener"><img loading="lazy" src="${media(e.framePath)}" alt="Snapshot"></a>`
         : '';
     let actions = '';
+    const byAi = e.adminId === 'ai'; // resolved by the AI check: admins can still overrule it
     if (e.adminAction) {
-      actions = `<span class="resolved-by">${icon('check')}${ACTION_TEXT[e.adminAction]}${e.resolvedAt ? ` · ${fmtTime(e.resolvedAt)}` : ''}</span>`;
+      actions = `<span class="resolved-by">${icon('check')}${ACTION_TEXT[e.adminAction]}${byAi ? ' · 🤖 AI check' : ''}${e.resolvedAt ? ` · ${fmtTime(e.resolvedAt)}` : ''}</span>`;
+      if (byAi && e.severity !== 'info') {
+        actions += `<button data-resolve="confirm" data-event="${e.id}" class="btn btn-danger">Overrule: confirm</button>
+          <button data-resolve="fp" data-event="${e.id}" class="btn btn-ok">Agree: false positive</button>`;
+      }
     } else if (e.severity !== 'info') {
       actions = `<button data-resolve="confirm" data-event="${e.id}" class="btn btn-danger">Confirm</button>
         <button data-resolve="fp" data-event="${e.id}" class="btn btn-ok">False positive</button>

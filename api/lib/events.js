@@ -14,22 +14,27 @@ export async function getEvent(eventId) {
   return rows[0] ?? null;
 }
 
-// First admin to click wins. Returns false if the event was already resolved.
+// The automatic AI check resolves as this id; admins can still overrule it.
+export const AI_ADMIN_ID = 'ai';
+
+// First admin to click wins (an AI check's decision can still be overruled by an admin).
+// Returns false if the event was already resolved.
 export async function resolveEvent(eventId, action, adminId) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
     const [res] = await conn.query(
       `UPDATE events SET admin_action = ?, admin_id = ?, resolved_at = UTC_TIMESTAMP(3)
-       WHERE id = ? AND admin_action IS NULL`,
-      [action, adminId, eventId],
+       WHERE id = ? AND (admin_action IS NULL OR (admin_id = ? AND ? <> ?))`,
+      [action, adminId, eventId, AI_ADMIN_ID, adminId, AI_ADMIN_ID],
     );
     if (!res.affectedRows) {
       await conn.rollback();
       return false;
     }
     // Label = the rule for a confirmed flag, 'false_positive' otherwise (event_id keeps the rule).
-    if (action !== 'ignored') {
+    // Only people's decisions become training labels: the AI check's own calls never do.
+    if (action !== 'ignored' && adminId !== AI_ADMIN_ID) {
       await conn.query(
         `INSERT INTO training_samples (event_id, image_path, label, source)
          SELECT id, frame_path, IF(? = 'confirmed', type, 'false_positive'), 'admin'

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from aiohttp import web
 
-from worker.llm import SecondOpinion
+from worker.llm import GeminiOpinion, SecondOpinion, Verdict, parse_verdict
 
 
 def message(text=None, stop_reason="end_turn"):
@@ -14,7 +14,7 @@ def message(text=None, stop_reason="end_turn"):
             "stop_reason": stop_reason, "stop_sequence": None, "usage": {"input_tokens": 1, "output_tokens": 1}}
 
 
-async def with_mock(reply, fn):
+async def with_mock(reply, fn, path="/v1/messages"):
     seen = []
 
     async def handler(request):
@@ -23,7 +23,7 @@ async def with_mock(reply, fn):
         return web.json_response(payload, status=status)
 
     app = web.Application()
-    app.router.add_post("/v1/messages", handler)
+    app.router.add_post(path, handler)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "127.0.0.1", 0)
@@ -90,3 +90,64 @@ def test_rate_limit_per_session(monkeypatch):
     assert o.allowed(2)
     o.forget(1)
     assert o.allowed(1)
+
+
+# --- Gemini ------------------------------------------------------------------------------------
+
+GEMINI_PATH = "/v1beta/models/gemini-3.5-flash-lite:generateContent"
+
+
+def gemini_reply(text):
+    return {"candidates": [{"content": {"parts": [{"text": text}], "role": "model"}, "finishReason": "STOP", "index": 0}]}
+
+
+def gemini(base_url, monkeypatch):
+    monkeypatch.setenv("GEMINI_BASE_URL", base_url)
+    return GeminiOpinion("gemini-key", "gemini-3.5-flash-lite", 60)
+
+
+def run_gemini(frame, monkeypatch, reply):
+    async def go(url):
+        o = gemini(url, monkeypatch)
+        try:
+            return await o.judge(frame, "mod_menu", 0.91)
+        finally:
+            await o.http.close()
+
+    return asyncio.run(with_mock(reply, go, GEMINI_PATH))
+
+
+def test_gemini_request_shape_and_verdict(frame, monkeypatch):
+    verdict = {"verdict": "hack_menu", "confidence": 0.9, "reason": "Toggle list: Aimbot, ESP Box."}
+    v, seen = run_gemini(frame, monkeypatch, lambda: (200, gemini_reply(json.dumps(verdict))))
+    assert v.verdict == "hack_menu" and not v.dismisses(0.85)
+    assert seen[0]["headers"]["x-goog-api-key"] == "gemini-key"
+    parts = seen[0]["body"]["contents"][0]["parts"]
+    assert parts[0]["inline_data"]["mime_type"] == "image/jpeg" and parts[0]["inline_data"]["data"]
+    assert "mod_menu" in parts[1]["text"] and "JSON" in parts[1]["text"]
+
+
+def test_gemini_json_in_a_code_fence_and_dismissal(frame, monkeypatch):
+    text = 'Here you go:\n```json\n{"verdict": "normal_gameplay", "confidence": 0.95, "reason": "CODM HUD only."}\n```'
+    v, _ = run_gemini(frame, monkeypatch, lambda: (200, gemini_reply(text)))
+    assert v.verdict == "normal_gameplay" and v.dismisses(0.85)
+
+
+def test_gemini_blocked_or_empty_is_unclear(frame, monkeypatch):
+    v, _ = run_gemini(frame, monkeypatch, lambda: (200, {"candidates": [], "promptFeedback": {"blockReason": "OTHER"}}))
+    assert v.verdict == "unclear" and not v.dismisses(0.0)
+
+
+def test_gemini_errors_give_no_verdict(frame, monkeypatch):
+    v, _ = run_gemini(frame, monkeypatch, lambda: (429, {"error": {"code": 429, "message": "quota"}}))
+    assert v is None
+    v, _ = run_gemini(frame, monkeypatch, lambda: (400, {"error": {"code": 400, "message": "API key not valid"}}))
+    assert v is None
+
+
+def test_dismiss_rules():
+    assert Verdict("game_menu", 0.9, "").dismisses(0.85)
+    assert not Verdict("game_menu", 0.6, "").dismisses(0.85)  # not sure enough
+    assert not Verdict("unclear", 0.99, "").dismisses(0.85)
+    assert not Verdict("esp_overlay", 0.99, "").dismisses(0.85)
+    assert parse_verdict('{"verdict": "made_up", "confidence": 1, "reason": ""}') is None
