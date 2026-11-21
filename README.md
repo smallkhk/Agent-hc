@@ -6,6 +6,18 @@ Discord bots can't watch voice-channel video, so players open a one-time cam lin
 That page streams through LiveKit Cloud to your server, where admins watch and the vision worker analyses the feed.
 Players only use a browser: nothing to install.
 
+## Quick install (one command)
+
+On a fresh Ubuntu 22.04 / 24.04 VPS, with a domain pointing at it (a free DuckDNS name works):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/smallkhk/Agent-hc/claude/new-session-ij0chs/deploy/install.sh | sudo bash -s -- your-name.duckdns.org
+```
+
+It installs everything, gets the HTTPS certificate and writes `/opt/handcam/.env` with generated secrets. Put your
+Discord and LiveKit keys in that file and run the same command again to start. Re-run it any time to update.
+The manual steps below do the same by hand.
+
 ## Setup
 
 1. **Server:** Ubuntu with Docker, Node 20.12+, Python 3.11, FFmpeg, MySQL 8, Nginx. Only ports 80/443 need to be open.
