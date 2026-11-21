@@ -113,17 +113,20 @@ elif [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
 Set the domain's IP to $my_ip (DuckDNS: the 'current ip' box), wait a few minutes, then run this again."
   fi
   # temporary plain-HTTP site so Let's Encrypt can check the domain
-  printf 'server {\n  listen 80;\n  listen [::]:80;\n  server_name %s;\n  location /.well-known/acme-challenge/ { root /var/www/certbot; }\n}\n' \
+  printf 'server {\n  listen 80;\n  server_name %s;\n  location /.well-known/acme-challenge/ { root /var/www/certbot; }\n}\n' \
     "$DOMAIN" > "$site"
   ln -sf "$site" /etc/nginx/sites-enabled/handcam
-  nginx -t -q && systemctl reload nginx
+  nginx -t -q || die "nginx rejected its config (see above)"
+  systemctl reload nginx
   certbot certonly --webroot -w /var/www/certbot -d "$DOMAIN" -n --agree-tos --register-unsafely-without-email \
     --deploy-hook "systemctl reload nginx"
 fi
 if [ "$SKIP_TLS" != 1 ]; then
   sed "s/handcam.example.com/$DOMAIN/g" deploy/nginx/handcam.conf > "$site"
+  if [ ! -s /proc/net/if_inet6 ]; then sed -i '/listen \[::\]/d' "$site"; fi # no IPv6 on this server
   ln -sf "$site" /etc/nginx/sites-enabled/handcam
-  nginx -t -q && systemctl reload nginx
+  nginx -t -q || die "nginx rejected its config (see above)"
+  systemctl reload nginx
 fi
 if command -v ufw >/dev/null && ufw status | grep -q "Status: active"; then
   ufw allow OpenSSH >/dev/null && ufw allow 'Nginx Full' >/dev/null
@@ -150,7 +153,7 @@ EOF
 fi
 
 step "Starting bot, API and vision worker"
-npm run -s bot:deploy
+npm run -s bot:deploy || die "Discord rejected the bot login: check DISCORD_TOKEN and DISCORD_CLIENT_ID in $DIR/.env"
 pm2 startOrReload deploy/ecosystem.config.cjs --update-env
 pm2 save
 pm2 startup systemd -u root --hp /root >/dev/null
