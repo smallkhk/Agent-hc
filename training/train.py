@@ -93,6 +93,8 @@ def wash(img: np.ndarray, rng: random.Random) -> np.ndarray:
 
 
 def augment(img: np.ndarray, rng: random.Random) -> np.ndarray:
+    if rng.random() < 0.3:  # the camera can see the device upside down
+        img = cv2.rotate(img, cv2.ROTATE_180)
     if rng.random() < 0.6:
         img = fingers(img, rng)
     if rng.random() < 0.5:

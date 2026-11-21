@@ -19,7 +19,7 @@ import numpy as np
 
 from worker.detect.integrity import hamming, phash
 from worker.detect.menu import SUSPICIOUS_DEFAULT, flatten_screen
-from worker.detect.screen import ScreenParams, detect_screen
+from worker.detect.screen import ScreenParams, ScreenTracker, detect_screen
 
 CLASSES = ("normal_gameplay", "codm_menu_ui", "mod_menu", "esp_overlay", "unknown_overlay")
 SIZE = (448, 224)
@@ -47,14 +47,16 @@ class Writer:
         return True
 
 
-def crop(frame: np.ndarray) -> np.ndarray | None:
-    r = detect_screen(frame, PARAMS)
+def crop(frame: np.ndarray, tracker: ScreenTracker | None = None) -> np.ndarray | None:
+    # A tracker keeps the screen while hands cover part of it, as the live worker does.
+    r = tracker.update(frame) if tracker else detect_screen(frame, PARAMS)
     return flatten_screen(frame, r.corners, SIZE) if r.ok and r.corners is not None else None
 
 
 def from_videos(files: list[Path], out: Writer, every: float) -> None:
     for f in files:
         cap = cv2.VideoCapture(str(f))
+        tracker = ScreenTracker(PARAMS)
         fps = cap.get(cv2.CAP_PROP_FPS) or 15
         step = max(1, round(fps * every))
         i = found = 0
@@ -64,7 +66,7 @@ def from_videos(files: list[Path], out: Writer, every: float) -> None:
                 break
             if i % step == 0:
                 _, frame = cap.retrieve()
-                flat = crop(frame)
+                flat = crop(frame, tracker)
                 if flat is not None and out.add(flat, f"{f.stem}_{i:06d}"):
                     found += 1
             i += 1
