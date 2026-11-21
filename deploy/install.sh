@@ -112,7 +112,7 @@ npm run -s db:migrate
 
 site=/etc/nginx/sites-available/handcam
 mkdir -p /var/www/certbot
-rm -f /etc/nginx/sites-enabled/default
+# Other sites on this server (including nginx's default site) are left alone: ours answers only on $DOMAIN.
 if [ "$SKIP_TLS" = 1 ]; then
   step "HTTPS skipped (HANDCAM_SKIP_TLS=1)"
 elif [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
