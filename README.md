@@ -8,12 +8,14 @@ Players only use a browser: nothing to install.
 
 ## Quick install (one command)
 
-On a fresh Ubuntu 22.04 / 24.04 VPS, with a domain pointing at it (a free DuckDNS name works):
+On a fresh Ubuntu 22.04 / 24.04 VPS:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/smallkhk/Agent-hc/claude/new-session-ij0chs/deploy/install.sh | sudo bash -s -- your-name.duckdns.org
+curl -fsSL https://raw.githubusercontent.com/smallkhk/Agent-hc/claude/new-session-ij0chs/deploy/install.sh | sudo bash
 ```
 
+No domain or account needed: it uses the server's free sslip.io address (`1.2.3.4` → `https://1-2-3-4.sslip.io`).
+To use your own domain, add it at the end: `... | sudo bash -s -- handcam.example.com`.
 It installs everything, gets the HTTPS certificate and writes `/opt/handcam/.env` with generated secrets. Put your
 Discord and LiveKit keys in that file and run the same command again to start. Re-run it any time to update.
 The manual steps below do the same by hand.

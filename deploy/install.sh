@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # One-command install / update on a fresh Ubuntu 22.04 or 24.04 VPS.
 #
-#   curl -fsSL https://raw.githubusercontent.com/smallkhk/Agent-hc/claude/new-session-ij0chs/deploy/install.sh | sudo bash -s -- your-name.duckdns.org
+#   curl -fsSL https://raw.githubusercontent.com/smallkhk/Agent-hc/claude/new-session-ij0chs/deploy/install.sh | sudo bash
+#
+# No domain needed: it uses this server's free sslip.io name (1.2.3.4 → 1-2-3-4.sslip.io, no account).
+# To use your own domain instead, add it at the end:  ... | sudo bash -s -- handcam.example.com
 #
 # Run 1 installs everything, sets up HTTPS and writes /opt/handcam/.env with generated secrets.
 # Then put your Discord and LiveKit keys in that .env and run the same command again: run 2 starts the bot,
@@ -19,7 +22,15 @@ step() { printf '\n\033[1;32m==> %s\033[0m\n' "$*"; }
 die() { printf '\n\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 [ "$(id -u)" = 0 ] || die "run as root: put sudo before bash"
-[ -n "$DOMAIN" ] || die "give your domain, e.g.: ... | sudo bash -s -- your-name.duckdns.org"
+if [ -z "$DOMAIN" ] && [ -f "$DIR/.env" ]; then # re-run: keep the address chosen the first time
+  DOMAIN=$(grep -E '^PUBLIC_URL=' "$DIR/.env" | sed -E 's|^PUBLIC_URL=https?://([^/:]+).*|\1|' || true)
+fi
+if [ -z "$DOMAIN" ]; then # free name that always points at this server: 1.2.3.4 → 1-2-3-4.sslip.io
+  ip=$(curl -4 -fsS --max-time 10 https://ifconfig.me || true)
+  [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "could not find this server's IPv4 address; give a domain instead"
+  DOMAIN="${ip//./-}.sslip.io"
+  echo "Using the free address https://$DOMAIN"
+fi
 [[ "$DOMAIN" =~ ^[a-zA-Z0-9.-]+$ ]] || die "'$DOMAIN' is not a domain name (no https://, no slashes)"
 
 # --- packages ----------------------------------------------------------------------------------
@@ -110,7 +121,7 @@ elif [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
   dns_ip=$(getent ahostsv4 "$DOMAIN" | awk 'NR==1 {print $1}' || true)
   if [ -n "$my_ip" ] && [ "$dns_ip" != "$my_ip" ]; then
     die "$DOMAIN points to '${dns_ip:-nothing}', but this server is $my_ip.
-Set the domain's IP to $my_ip (DuckDNS: the 'current ip' box), wait a few minutes, then run this again."
+Point the domain at $my_ip, wait a few minutes, then run this again."
   fi
   # temporary plain-HTTP site so Let's Encrypt can check the domain
   printf 'server {\n  listen 80;\n  server_name %s;\n  location /.well-known/acme-challenge/ { root /var/www/certbot; }\n}\n' \
@@ -119,7 +130,10 @@ Set the domain's IP to $my_ip (DuckDNS: the 'current ip' box), wait a few minute
   nginx -t -q || die "nginx rejected its config (see above)"
   systemctl reload nginx
   certbot certonly --webroot -w /var/www/certbot -d "$DOMAIN" -n --agree-tos --register-unsafely-without-email \
-    --deploy-hook "systemctl reload nginx"
+    --deploy-hook "systemctl reload nginx" ||
+    die "no HTTPS certificate yet (see the certbot message above).
+If it says 'too many certificates', Let's Encrypt's weekly quota for $DOMAIN's parent domain is used up
+by other people: wait a few hours and run this command again. Everything else is already installed."
 fi
 if [ "$SKIP_TLS" != 1 ]; then
   sed "s/handcam.example.com/$DOMAIN/g" deploy/nginx/handcam.conf > "$site"
