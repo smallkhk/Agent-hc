@@ -28,10 +28,9 @@ step "System packages (a few minutes)"
 apt-get update -q
 apt-get install -y -q git curl ca-certificates openssl nginx certbot ffmpeg mysql-server redis-server \
   software-properties-common htop
-if ! apt-cache show python3.11-venv >/dev/null 2>&1 || ! apt-get install -y -q python3.11 python3.11-venv; then
-  add-apt-repository -y ppa:deadsnakes/ppa
-  apt-get install -y -q python3.11 python3.11-venv
-fi
+# Ubuntu 22.04's own python3.11 is a release candidate and 24.04 has none: use the deadsnakes build.
+if ! grep -rqs deadsnakes /etc/apt/sources.list.d/; then add-apt-repository -y ppa:deadsnakes/ppa; fi
+apt-get install -y -q python3.11 python3.11-venv
 node_major=$(node -v 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/' || true)
 if [ -z "$node_major" ] || [ "$node_major" -lt 20 ]; then
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
