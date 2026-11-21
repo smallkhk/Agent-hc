@@ -115,7 +115,13 @@ export async function callback(req, res, next) {
       }
     }
     if (!guilds.length) {
-      return res.status(403).send('You are not a hand cam admin in any server. <a href="/">Back</a>');
+      return res
+        .status(403)
+        .send(
+          'No hand cam server found for your account. Invite the hand cam bot to your Discord server first; ' +
+            'you need to own that server or have Manage Server there (or the role set with /handcam config admin_role). ' +
+            '<a href="/admin.html">Back</a>',
+        );
     }
     res.cookie(COOKIE, encodeSession({ uid: user.id, name: user.global_name ?? user.username, guilds }), cookieOpts(TTL_MS));
     res.redirect('/admin.html');
