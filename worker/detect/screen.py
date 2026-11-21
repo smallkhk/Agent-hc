@@ -93,11 +93,16 @@ def _touches_border(contour: np.ndarray, w: int, h: int, margin: float) -> bool:
     return x <= margin or y <= margin or x + cw >= w - margin or y + ch >= h - margin
 
 
-def detect_screen(frame_bgr: np.ndarray, p: ScreenParams = ScreenParams()) -> ScreenResult:
-    src_h, src_w = frame_bgr.shape[:2]
+def _work_gray(frame_bgr: np.ndarray) -> tuple[np.ndarray, float]:
+    """Downscaled grayscale copy and its scale factor."""
+    src_w = frame_bgr.shape[1]
     scale = WORK_WIDTH / src_w if src_w > WORK_WIDTH else 1.0
     small = cv2.resize(frame_bgr, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA) if scale != 1 else frame_bgr
-    gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
+    return cv2.cvtColor(small, cv2.COLOR_BGR2GRAY), scale
+
+
+def detect_screen(frame_bgr: np.ndarray, p: ScreenParams = ScreenParams()) -> ScreenResult:
+    gray, scale = _work_gray(frame_bgr)
     h, w = gray.shape
     frame_area = float(w * h)
     margin = p.edge_margin_px * scale
@@ -138,7 +143,13 @@ def detect_screen(frame_bgr: np.ndarray, p: ScreenParams = ScreenParams()) -> Sc
         return ScreenResult(False, CUT_OFF, corners, area_frac, aspect)
     if area_frac < p.min_area:
         return ScreenResult(False, TOO_SMALL, corners, area_frac, aspect)
+    return _check_pixels(gray, quad, corners, area_frac, aspect, p)
 
+
+def _check_pixels(
+    gray: np.ndarray, quad: np.ndarray, corners: np.ndarray, area_frac: float, aspect: float, p: ScreenParams
+) -> ScreenResult:
+    """Brightness and glare inside a located screen (quad in work pixels, corners in source pixels)."""
     mask = np.zeros_like(gray)
     cv2.fillConvexPoly(mask, quad.astype(np.int32), 255)
     pixels = gray[mask > 0]
@@ -149,6 +160,52 @@ def detect_screen(frame_bgr: np.ndarray, p: ScreenParams = ScreenParams()) -> Sc
     if glare > p.glare_frac:
         return ScreenResult(False, GLARE, corners, area_frac, aspect, brightness, glare)
     return ScreenResult(True, None, corners, area_frac, aspect, brightness, glare)
+
+
+def outline_support(gray: np.ndarray, quad: np.ndarray, samples_per_side: int = 60) -> float:
+    """Fraction of a quad's outline (work pixels) that lines up with an edge in this frame."""
+    edges = cv2.Canny(cv2.GaussianBlur(gray, (5, 5), 0), 50, 150)
+    edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=2)  # a few px of tolerance
+    h, w = gray.shape
+    hits = total = 0
+    for a, b in zip(quad, np.roll(quad, -1, axis=0)):
+        for t in np.linspace(0.05, 0.95, samples_per_side):  # skip the (often rounded) corners
+            x, y = (a + (b - a) * t).astype(int)
+            total += 1
+            hits += bool(0 <= x < w and 0 <= y < h and edges[y, x])
+    return hits / total
+
+
+class ScreenTracker:
+    """detect_screen plus tolerance for hands over the screen.
+
+    A hand or an arm over the device can hide part of its outline or join it to the frame edge, so
+    detection alone reports CUT_OFF / NOT_FOUND while the screen has not moved. When that happens and
+    most of the last good outline still lines up with edges in the new frame, the screen is in the same
+    place, only partly covered: it still passes. A screen that really moved or left the frame no longer
+    matches its old outline, so the warning stands.
+    """
+
+    def __init__(self, params: ScreenParams = ScreenParams(), min_support: float = 0.5) -> None:
+        self.params = params
+        self.min_support = min_support
+        self.last_ok: np.ndarray | None = None  # corners in source pixels
+
+    def reset(self) -> None:
+        self.last_ok = None
+
+    def update(self, frame_bgr: np.ndarray) -> ScreenResult:
+        r = detect_screen(frame_bgr, self.params)
+        if r.ok:
+            self.last_ok = r.corners
+            return r
+        if r.reason in (CUT_OFF, NOT_FOUND) and self.last_ok is not None:
+            gray, scale = _work_gray(frame_bgr)
+            quad = self.last_ok * scale
+            if outline_support(gray, quad) >= self.min_support:
+                area_frac = cv2.contourArea(quad) / float(gray.shape[0] * gray.shape[1])
+                return _check_pixels(gray, quad, self.last_ok, area_frac, quad_aspect(quad), self.params)
+        return r
 
 
 class CornerSmoother:

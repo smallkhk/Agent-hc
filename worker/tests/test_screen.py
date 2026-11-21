@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import pytest
 
@@ -81,3 +82,52 @@ def test_smoother_follows_and_resets():
     assert np.allclose(sm.update(a + 10), a + 5)
     assert np.allclose(sm.update(a + 200), a + 200)
     assert sm.update(None) is None
+
+
+# --- hands over the screen (ScreenTracker) ----------------------------------------------------
+
+def arm(img, quad, side="left"):
+    """A forearm reaching in from the frame edge with the hand resting on the screen."""
+    out = img.copy()
+    q = np.float32(quad)
+    centre = q.mean(axis=0)
+    hand = (q[0] * 0.25 + centre * 0.75).astype(int) if side == "left" else (q[1] * 0.25 + centre * 0.75).astype(int)
+    start = (0, int(hand[1] + 120)) if side == "left" else (img.shape[1] - 1, int(hand[1] + 120))
+    cv2.line(out, start, tuple(int(v) for v in hand), (70, 95, 140), 95)
+    cv2.ellipse(out, tuple(int(v) for v in hand), (85, 60), 30, 0, 360, (80, 105, 150), -1)
+    return out
+
+
+@pytest.mark.parametrize("side", ["left", "right"])
+def test_tracker_keeps_a_screen_covered_by_a_hand(side):
+    t = s.ScreenTracker()
+    assert t.update(synth.scene(synth.GOOD)).ok
+    covered = arm(synth.scene(synth.GOOD), synth.GOOD, side)
+    r = t.update(covered)
+    assert r.ok, r
+    assert np.abs(r.corners - t.last_ok).max() < 1e-3  # same place as before
+
+
+def test_tracker_still_reports_a_screen_moved_out_of_frame():
+    t = s.ScreenTracker()
+    assert t.update(synth.scene(synth.GOOD)).ok
+    r = t.update(synth.scene(shifted(synth.GOOD, dx=200)))
+    assert not r.ok and r.reason == s.CUT_OFF
+
+
+def test_tracker_still_reports_a_screen_that_left():
+    t = s.ScreenTracker()
+    assert t.update(synth.scene(synth.GOOD)).ok
+    rng = np.random.default_rng(3)
+    assert not t.update(synth.desk(rng)).ok  # camera pointed at the desk only
+
+
+def test_tracker_still_reports_a_covered_camera():
+    t = s.ScreenTracker()
+    assert t.update(synth.scene(synth.GOOD)).ok
+    assert not t.update(np.full((synth.H, synth.W, 3), 8, np.uint8)).ok
+
+
+def test_tracker_needs_a_good_frame_first():
+    covered = arm(synth.scene(synth.GOOD), synth.GOOD)
+    assert s.ScreenTracker().update(covered).reason == s.detect_screen(covered).reason

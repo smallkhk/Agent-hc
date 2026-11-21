@@ -31,6 +31,7 @@ SCREEN_TOPIC = "handcam.screen"
 STATUS_EVERY_SEC = 3.0
 RECONNECT_LOG_AFTER_SEC = 2.0
 CLIP_BEFORE_SEC = CLIP_AFTER_SEC = 10.0
+SCENE_SETTLE_SEC = 60.0  # no "scene changed" while the player is still setting the camera up
 CLIP_FLUSH_SEC = 3.0  # fragments are written at each keyframe (every 2 s)
 
 # Shown on the player's cam page under the guide box.
@@ -81,6 +82,8 @@ class SessionWatcher:
         self.loops = integrity.LoopDetector(int(600 * cfg.sample_fps), match_run=cfg.loop_match_run)
         self.scene = integrity.SceneChangeDetector()
         self.smoother = screen_mod.CornerSmoother()
+        self.tracker = screen_mod.ScreenTracker(self.cfg.screen)
+        self.first_ok_at: float | None = None
 
         self.recordings_dir = cfg.storage_dir / "recordings" / str(self.id)
         self.recorder = Recorder(self.recordings_dir, cfg.record_fps)
@@ -185,6 +188,7 @@ class SessionWatcher:
             self.track_lost_at = time.monotonic()
             self.frame = None
             self.smoother.update(None)
+            self.tracker.reset()
 
     async def _read_frames(self, track: rtc.Track) -> None:
         # capacity=1: keep only the newest frame; we sample far below the stream's fps.
@@ -218,6 +222,10 @@ class SessionWatcher:
                         None, self._analyse, snapshot
                     )
                     static = self.freeze.is_static(diff)
+                    if result.ok and self.first_ok_at is None:
+                        self.first_ok_at = started
+                    if self.first_ok_at is None or started - self.first_ok_at < SCENE_SETTLE_SEC:
+                        scene_changed = False  # still setting up: moving the camera around is expected
                     self.uptime_delta += period
                     events += self._screen_events(result, started)
                     events += self.loop_rule.update(looping, started, integrity.FEED_LOOPED)
@@ -293,7 +301,8 @@ class SessionWatcher:
         self, bgr: np.ndarray
     ) -> tuple[screen_mod.ScreenResult, float, bool, bool, np.ndarray | None, Prediction | None]:
         self._save_thumb(bgr)
-        result = screen_mod.detect_screen(bgr, self.cfg.screen)
+        self.tracker.params = self.cfg.screen  # thresholds can change with /handcam config
+        result = self.tracker.update(bgr)
         corners = self.smoother.update(result.corners)
         # Only compare backgrounds while the screen is properly in frame: a screen sliding out of
         # frame shifts the background too, and the screen rule already reports that.
