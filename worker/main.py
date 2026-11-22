@@ -9,6 +9,7 @@ import signal
 from worker import config as config_mod
 from worker.api_client import ApiClient
 from worker.detect.menu import MenuClassifier
+from worker.detect.text import TextReader
 from worker.llm import SecondOpinion
 from worker.session import SessionWatcher
 
@@ -20,6 +21,7 @@ class Supervisor:
         self.cfg = config_mod.load()
         self.client = ApiClient(self.cfg)
         self.menu = MenuClassifier.load(self.cfg.menu_model)  # one ONNX session for every watcher
+        self.text = TextReader.load() if self.cfg.text_enabled else None  # one OCR model for every watcher
         self.llm = (
             SecondOpinion(self.cfg.llm_api_key, self.cfg.llm_model, self.cfg.llm_min_interval_sec)
             if self.cfg.llm_enabled else None
@@ -36,7 +38,7 @@ class Supervisor:
             if entry and not entry[1].done():
                 entry[0].update_thresholds(info["thresholds"])
                 continue
-            watcher = SessionWatcher(info, self.cfg, self.client, self.menu, self.llm)
+            watcher = SessionWatcher(info, self.cfg, self.client, self.menu, self.llm, self.text)
             task = asyncio.create_task(watcher.run(), name=f"session-{sid}")
             task.add_done_callback(lambda t, sid=sid: self._on_done(sid, t))
             self.watchers[sid] = (watcher, task)

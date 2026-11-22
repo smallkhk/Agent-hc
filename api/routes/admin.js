@@ -61,7 +61,7 @@ adminRouter.get('/api/sessions/:id', async (req, res, next) => {
     const s = await sessionFor(req, idParam(req));
     if (!s) return res.status(404).json({ error: 'Not found.' });
     const [events] = await pool.query(
-      `SELECT id, type, severity, score, ts, frame_path AS framePath, clip_path AS clipPath,
+      `SELECT id, type, severity, score, detail, ts, frame_path AS framePath, clip_path AS clipPath,
               admin_action AS adminAction, admin_id AS adminId, resolved_at AS resolvedAt, llm_verdict AS llmVerdict
        FROM events WHERE session_id = ? ORDER BY ts DESC LIMIT 500`,
       [s.id],

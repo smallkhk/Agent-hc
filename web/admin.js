@@ -20,6 +20,9 @@
     unknown_overlay: 'Unknown overlay on screen',
     normal_gameplay: 'Normal gameplay',
     codm_menu_ui: 'CODM menu',
+    cheat_text: 'Cheat text on screen',
+    testflight: 'TestFlight open on screen',
+    duplicate_codm: 'Two CODM apps on screen',
   };
   const ACTION_TEXT = { confirmed: 'Confirmed', false_positive: 'False positive', ignored: 'Ignored 10 min' };
   const icon = (name) => `<svg><use href="#i-${name}"/></svg>`;
@@ -212,7 +215,7 @@
 
   function eventRow(e) {
     const sev = e.severity === 'violation' ? ['chip-bad', 'Violation'] : e.severity === 'warning' ? ['chip-warn', 'Warning'] : ['', 'Info'];
-    const shadow = e.severity === 'info' && ['mod_menu', 'esp_overlay', 'unknown_overlay'].includes(e.type);
+    const shadow = e.severity === 'info' && ['mod_menu', 'esp_overlay', 'unknown_overlay', 'cheat_text'].includes(e.type);
     const score = e.score != null ? `<span class="score">score ${Number(e.score).toFixed(2)}</span>` : '';
     // One media slot: the clip with the snapshot as its cover, or just the snapshot until the clip is cut.
     const poster = e.framePath ? ` poster="${media(e.framePath)}"` : '';
@@ -238,6 +241,7 @@
       <div class="ev-head"><span class="chip ${sev[0]}">${sev[1]}</span>${shadow ? '<span class="chip">Shadow</span>' : ''}
         <strong>${esc(RULE_TEXT[e.type] || e.type)}</strong>${score}<span class="time">${fmtTime(e.ts)}</span></div>
       ${mediaHtml ? `<div class="ev-media">${mediaHtml}</div>` : ''}
+      ${e.detail ? `<div class="ev-verdict">${icon('flag')}<span>${esc(e.detail)}</span></div>` : ''}
       ${e.llmVerdict ? `<div class="ev-verdict">${icon('bot')}<span>AI second opinion: ${esc(e.llmVerdict)}</span></div>` : ''}
       ${actions ? `<div class="ev-actions">${actions}</div>` : ''}
     </li>`;

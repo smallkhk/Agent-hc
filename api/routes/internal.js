@@ -115,6 +115,7 @@ const eventBody = z.object({
   type: z.string().regex(/^[A-Za-z_]{2,32}$/),
   severity: z.enum(['info', 'warning', 'violation']),
   score: z.number().nullable().optional(),
+  detail: z.string().max(300).nullable().optional(),
   ts: z.number().int().positive(),
   framePath: z
     .string()
@@ -134,9 +135,10 @@ internalRouter.post('/events', async (req, res, next) => {
     const alert = e.severity !== 'info';
     const muted = alert && (await isMuted(e.sessionId, e.type));
     const [ins] = await pool.query(
-      `INSERT INTO events (session_id, type, severity, score, ts, frame_path, admin_action)
-       VALUES (?, ?, ?, ?, FROM_UNIXTIME(? / 1000), ?, ?)`,
-      [e.sessionId, e.type, e.severity, e.score ?? null, e.ts, e.framePath ?? null, muted ? 'ignored' : null],
+      `INSERT INTO events (session_id, type, severity, score, detail, ts, frame_path, admin_action)
+       VALUES (?, ?, ?, ?, ?, FROM_UNIXTIME(? / 1000), ?, ?)`,
+      [e.sessionId, e.type, e.severity, e.score ?? null, e.detail ?? null, e.ts, e.framePath ?? null,
+        muted ? 'ignored' : null],
     );
     if (alert && !muted) await publish({ eventId: ins.insertId }, EVENTS_CHANNEL);
     await publish({ eventId: ins.insertId }, DASHBOARD_CHANNEL);

@@ -81,6 +81,8 @@ npm ci --no-audit --no-fund --loglevel=error
 [ -x .venv/bin/python ] || python3.11 -m venv .venv
 .venv/bin/pip install -q --upgrade pip
 .venv/bin/pip install -q -r worker/requirements.txt
+.venv/bin/pip install -q --no-deps rapidocr_onnxruntime==1.4.4  # offline text reading (deps are in requirements)
+.venv/bin/pip uninstall -y -q opencv-python 2>/dev/null || true  # never next to opencv-python-headless
 
 # --- config ------------------------------------------------------------------------------------
 

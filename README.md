@@ -27,7 +27,7 @@ The manual steps below do the same by hand.
    secret into `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`. The free plan (5,000 minutes, 50 GB a month)
    covers about 80 one-player or 40 two-player 30-minute matches.
 2. `cp .env.example .env` and fill it in (`WORKER_SECRET`: `openssl rand -hex 32`). `npm ci`, then `npm run db:migrate`.
-   Vision worker: `python3.11 -m venv .venv && .venv/bin/pip install -r worker/requirements.txt`.
+   Vision worker: `python3.11 -m venv .venv && .venv/bin/pip install -r worker/requirements.txt && .venv/bin/pip install --no-deps rapidocr_onnxruntime==1.4.4`.
 3. `cd deploy && docker compose --env-file ../.env up -d` (Redis). Running your own LiveKit server instead of the
    cloud: add `--profile selfhosted`, use `deploy/nginx/livekit-selfhosted.conf`, and open UDP 50000–60000 + TCP 7881.
 4. Nginx: copy `deploy/nginx/handcam.conf`, replace the domains, run certbot.
@@ -80,6 +80,8 @@ The vision worker checks every live cam twice a second and posts to the alert ch
 | Feed looped / replayed (pre-recorded video) | violation when 20 consecutive samples (10 s) repeat an earlier part of the last 10 min |
 | Camera scene changed (possible device swap) | warning |
 | Mod menu / ESP / unknown overlay on screen | needs a trained model, see [training/README.md](training/README.md). Starts in shadow mode: logged, no alert, until `MENU_SHADOW=false` |
+| Cheat words on screen (Aimbot, ESP Box, Hit Magic, Key remaining, a cheat watermark such as "CLOUD"…) | violation, read with offline OCR every `TEXT_EVERY_SEC` (10 s), with the words in the alert |
+| TestFlight on screen, or two Call of Duty apps on the home screen | warning (possible sideloaded or modded build) |
 
 **AI second opinion (optional, off by default):** with `LLM_SECOND_OPINION=true`, each hack-menu flag also sends the
 flattened screen to Gemini (`LLM_MODEL`, default `gemini-3.5-flash-lite`; free-tier key from aistudio.google.com in

@@ -10,6 +10,7 @@ class Event:
     type: str
     severity: str  # info | warning | violation
     score: float | None = None
+    detail: str | None = None  # shown to admins, e.g. the text read on screen
 
 
 class EscalatingRule:

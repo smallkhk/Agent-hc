@@ -19,6 +19,7 @@ from worker.api_client import ApiClient
 from worker.config import Config
 from worker.detect import integrity
 from worker.detect import screen as screen_mod
+from worker.detect import text as text_mod
 from worker.detect.menu import MenuClassifier, MenuRule, Prediction, flatten_screen
 from worker.llm import SecondOpinion
 from worker.record.recorder import Recorder, cut_clip, list_chunks
@@ -32,6 +33,10 @@ STATUS_EVERY_SEC = 3.0
 RECONNECT_LOG_AFTER_SEC = 2.0
 CLIP_BEFORE_SEC = CLIP_AFTER_SEC = 10.0
 SCENE_EVENT_EVERY_SEC = 120.0
+TEXT_SIZE = (960, 480)  # the flattened screen is read at this size: big enough for menu text
+TEXT_SUSPICIOUS = 0.4  # read sooner when the menu model is this unsure
+TEXT_MIN_GAP_SEC = 3.0
+TEXT_EVENT_EVERY_SEC = 120.0  # one text alert per kind per player at most every 2 min
 SCENE_SETTLE_SEC = 60.0  # no "scene changed" while the player is still setting the camera up
 CLIP_FLUSH_SEC = 3.0  # fragments are written at each keyframe (every 2 s)
 
@@ -64,7 +69,8 @@ def frame_to_bgr(frame: rtc.VideoFrame) -> np.ndarray:
 
 class SessionWatcher:
     def __init__(self, info: dict[str, Any], cfg: Config, client: ApiClient,
-                 menu: MenuClassifier | None = None, llm: SecondOpinion | None = None) -> None:
+                 menu: MenuClassifier | None = None, llm: SecondOpinion | None = None,
+                 text: text_mod.TextReader | None = None) -> None:
         self.id: int = info["id"]
         self.room_name: str = info["room"]
         self.cfg = cfg
@@ -85,6 +91,10 @@ class SessionWatcher:
         self.smoother = screen_mod.CornerSmoother()
         self.tracker = screen_mod.ScreenTracker(self.cfg.screen)
         self.first_ok_at: float | None = None
+        self.text = text
+        self.last_text_at = -1e9
+        self.text_task: asyncio.Task[None] | None = None
+        self.last_text_event: dict[str, float] = {}
         self.last_scene_event: float | None = None
 
         self.recordings_dir = cfg.storage_dir / "recordings" / str(self.id)
@@ -242,6 +252,7 @@ class SessionWatcher:
                         if flagged and flat is not None:
                             await self._emit_menu(flagged, flat)
                     await self._send_hint(result, started)
+                    self._maybe_read_text(snapshot, result, pred, started)
                 else:
                     static = True  # no new frame since the last sample: the feed stalled
                 events += self.freeze_rule.update(static, started, integrity.FEED_FROZEN)
@@ -342,6 +353,41 @@ class SessionWatcher:
         except Exception as err:  # noqa: BLE001
             log.error("session %s: verdict for event %s not delivered: %s", self.id, event_id, err)
 
+    # --- text on screen ---------------------------------------------------------------------
+
+    def _maybe_read_text(self, bgr: np.ndarray, r: screen_mod.ScreenResult, pred: Prediction | None,
+                         now: float) -> None:
+        """Read the screen every TEXT_EVERY_SEC, sooner when the menu model is unsure; never queues."""
+        if not self.text or r.corners is None or self.text_task is not None or self.text.busy():
+            return
+        suspicious = pred is not None and pred.score >= TEXT_SUSPICIOUS
+        if now - self.last_text_at < (TEXT_MIN_GAP_SEC if suspicious else self.cfg.text_every_sec):
+            return
+        self.last_text_at = now
+        self.text_task = asyncio.create_task(self._read_text(bgr, r.corners.copy()))
+        self._track(self.text_task)
+
+    async def _read_text(self, bgr: np.ndarray, corners: np.ndarray) -> None:
+        assert self.text
+        try:
+            loop = asyncio.get_running_loop()
+            flat = await loop.run_in_executor(None, flatten_screen, bgr, corners, TEXT_SIZE)
+            texts = await loop.run_in_executor(None, self.text.read, flat)
+            now = time.monotonic()
+            for f in text_mod.classify(texts or []):
+                if now - self.last_text_event.get(f.type, -1e9) < TEXT_EVENT_EVERY_SEC:
+                    continue
+                self.last_text_event[f.type] = now
+                if f.type == text_mod.CHEAT_TEXT:
+                    severity = "info" if self.cfg.menu_shadow else "violation"
+                else:
+                    severity = "warning"
+                await self._emit([Event(f.type, severity, None, f.detail())], flat, save_frame=True, outline=False)
+        except Exception as err:  # noqa: BLE001 - text reading is best effort
+            log.error("session %s: text reading failed: %s", self.id, err)
+        finally:
+            self.text_task = None
+
     def _track(self, task: asyncio.Task[None]) -> None:
         self._clips.add(task)  # strong ref until done
         task.add_done_callback(self._clips.discard)
@@ -378,7 +424,7 @@ class SessionWatcher:
         created_ids: list[int] = []
         for e in events:
             body = {"sessionId": self.id, "type": e.type, "severity": e.severity, "score": e.score,
-                    "ts": ts_ms, "framePath": frame_path}
+                    "ts": ts_ms, "framePath": frame_path, "detail": e.detail}
             log.info("session %s: %s %s", self.id, e.severity, e.type)
             try:
                 created = await self.client.event(body)

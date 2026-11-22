@@ -38,6 +38,9 @@ export const RULE_TEXT = {
   mod_menu: 'Mod menu on screen',
   esp_overlay: 'ESP overlay on screen',
   unknown_overlay: 'Unknown overlay on screen',
+  cheat_text: 'Cheat text on screen',
+  testflight: 'TestFlight open on screen',
+  duplicate_codm: 'Two CODM apps on screen',
 };
 
 const RESOLVED_TEXT = {
@@ -73,6 +76,7 @@ export async function alertMessage(e) {
       { name: 'When', value: `<t:${ts}:T> (<t:${ts}:R>)`, inline: true },
     )
     .setFooter({ text: `${e.type} · event ${e.id} · session ${e.sessionId}` });
+  if (e.detail) embed.addFields({ name: '📝 Seen on screen', value: e.detail });
   if (e.llmVerdict) embed.addFields({ name: '🤖 AI second opinion', value: e.llmVerdict });
 
   const files = [];

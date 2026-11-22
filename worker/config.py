@@ -35,6 +35,8 @@ class Config:
     loop_match_run: int
     menu_model: Path
     menu_shadow: bool
+    text_enabled: bool
+    text_every_sec: float
     llm_enabled: bool
     llm_api_key: str | None
     llm_model: str
@@ -73,6 +75,9 @@ def load() -> Config:
         menu_model=Path(_env("MENU_MODEL", str(Path(__file__).parent / "models" / "menu_classifier.onnx"))),
         # Shadow mode: menu flags are stored as info events (no alert) until the model is trusted.
         menu_shadow=_env("MENU_SHADOW", "true").lower() != "false",
+        # Offline OCR for cheat words / TestFlight / a second CODM app on screen.
+        text_enabled=_env("TEXT_READING", "true").lower() != "false",
+        text_every_sec=_float("TEXT_EVERY_SEC", 10),
         llm_enabled=_env("LLM_SECOND_OPINION", "false").lower() == "true",
         llm_api_key=os.environ.get("LLM_API_KEY") or None,
         llm_model=_env("LLM_MODEL", "gemini-3.5-flash-lite"),

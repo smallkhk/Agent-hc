@@ -4,3 +4,11 @@ livekit==1.2.0
 numpy==2.4.6
 onnxruntime==1.31.1
 opencv-python-headless==5.0.0.93
+# Offline OCR (cheat words on screen). Its own dependencies minus opencv-python, which would clash with
+# opencv-python-headless above; the package itself is installed with --no-deps (deploy/install.sh).
+pyclipper==1.4.0
+shapely==2.2.0
+PyYAML>=6
+six>=1.16
+tqdm>=4
+Pillow>=10
