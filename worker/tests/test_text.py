@@ -11,7 +11,9 @@ R6X9_MENU = ["R6X9:CODM", "Enable Hit Magic", "Save Settings", "Enable AimBot", 
 CLOUD_IN_MATCH = ["28:51", "CLOUD", "6", "Piaver"]
 CLOUD_ENGINE = ["CLOUD ENGINE", "SKINS", "Weapons", "Melee", "Operators", "Apply locally (trial)"]
 HONEST_CODM_SETTINGS = ["PREVIEW", "Search and Preview", "Cloud Sensitivity Management"]
-HONEST_SETTINGS_WORDS = ["Aim Assist", "Auto Fire", "FOV", "ADS", "Sensitivity", "Gyroscope", "Skins", "Loadout"]
+HONEST_SETTINGS_WORDS = ["Aim Assist", "Auto Fire", "FOV", "ADS", "Sensitivity", "Gyroscope", "Skins", "Loadout",
+                         "Rapid Fire", "One Shot One Kill", "Recoil control", "Design", "Designs", "Fast Reload",
+                         "Champions", "Radar", "Unlock", "Max Ammo", "Movement speed", "Scarlet Witch skin"]
 
 
 def types(texts):
@@ -35,10 +37,18 @@ def test_legit_codm_settings_words_are_not_cheats():
     assert types(HONEST_SETTINGS_WORDS) == []
 
 
-def test_testflight_and_two_codm_apps():
-    assert types(["Photos", "TestFlight", "Settings"]) == [t.TESTFLIGHT]
+def test_sideload_apps_and_two_codm_apps():
+    assert types(["Photos", "TestFlight", "Settings"]) == [t.SIDELOAD_APP]
+    assert types(["ESign", "Safari"]) == [t.SIDELOAD_APP]
+    assert types(["Lucky Patcher"]) == [t.SIDELOAD_APP]
     assert types(["Call of Duty", "Safari", "Call of Duty"]) == [t.DUPLICATE_CODM]
     assert types(["Call of Duty", "Safari", "Discord"]) == []  # one install is normal
+
+
+def test_more_cheat_words_and_tools():
+    for text in ["ESP Line", "Silent Aim", "Magic Bullet", "No Recoil", "Key Remaining: 3d", "GameGuardian",
+                 "Speed Hack", "Wallhack", "Anti Ban", "Injected successfully", "Mod Menu", "Ignore Knocked"]:
+        assert types([text]) == [t.CHEAT_TEXT], text
 
 
 def test_reader_reads_a_rendered_menu():

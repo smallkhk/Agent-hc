@@ -80,8 +80,8 @@ The vision worker checks every live cam twice a second and posts to the alert ch
 | Feed looped / replayed (pre-recorded video) | violation when 20 consecutive samples (10 s) repeat an earlier part of the last 10 min |
 | Camera scene changed (possible device swap) | warning |
 | Mod menu / ESP / unknown overlay on screen | needs a trained model, see [training/README.md](training/README.md). Starts in shadow mode: logged, no alert, until `MENU_SHADOW=false` |
-| Cheat words on screen (Aimbot, ESP Box, Hit Magic, Key remaining, a cheat watermark such as "CLOUD"…) | violation, read with offline OCR every `TEXT_EVERY_SEC` (10 s), with the words in the alert |
-| TestFlight on screen, or two Call of Duty apps on the home screen | warning (possible sideloaded or modded build) |
+| Cheat words on screen (Aimbot, ESP Box, Hit Magic, No Recoil, Key remaining, GameGuardian, a cheat watermark such as "CLOUD"…; list in `worker/detect/text.py`) | violation, read with offline OCR every `TEXT_EVERY_SEC` (10 s), with the words in the alert |
+| A sideloading or modding app on screen (TestFlight, ESign, GBox, AltStore, Lucky Patcher, Parallel Space…), or two Call of Duty apps | warning (possible sideloaded or modded build) |
 
 **AI second opinion (optional, off by default):** with `LLM_SECOND_OPINION=true`, each hack-menu flag also sends the
 flattened screen to Gemini (`LLM_MODEL`, default `gemini-3.5-flash-lite`; free-tier key from aistudio.google.com in

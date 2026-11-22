@@ -39,7 +39,7 @@ export const RULE_TEXT = {
   esp_overlay: 'ESP overlay on screen',
   unknown_overlay: 'Unknown overlay on screen',
   cheat_text: 'Cheat text on screen',
-  testflight: 'TestFlight open on screen',
+  sideload_app: 'Sideloading / modding app on screen',
   duplicate_codm: 'Two CODM apps on screen',
 };
 

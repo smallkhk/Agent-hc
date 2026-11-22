@@ -21,7 +21,7 @@
     normal_gameplay: 'Normal gameplay',
     codm_menu_ui: 'CODM menu',
     cheat_text: 'Cheat text on screen',
-    testflight: 'TestFlight open on screen',
+    sideload_app: 'Sideloading / modding app on screen',
     duplicate_codm: 'Two CODM apps on screen',
   };
   const ACTION_TEXT = { confirmed: 'Confirmed', false_positive: 'False positive', ignored: 'Ignored 10 min' };
