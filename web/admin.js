@@ -22,6 +22,7 @@
     codm_menu_ui: 'CODM menu',
     cheat_text: 'Cheat text on screen',
     sideload_app: 'Sideloading / modding app on screen',
+    shortcuts_app: 'iOS Shortcuts in use (possible config cheat)',
     duplicate_codm: 'Two CODM apps on screen',
   };
   const ACTION_TEXT = { confirmed: 'Confirmed', false_positive: 'False positive', ignored: 'Ignored 10 min' };

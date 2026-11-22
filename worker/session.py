@@ -36,6 +36,7 @@ SCENE_EVENT_EVERY_SEC = 120.0
 TEXT_SIZE = (960, 480)  # the flattened screen is read at this size: big enough for menu text
 TEXT_SUSPICIOUS = 0.4  # read sooner when the menu model is this unsure
 TEXT_MIN_GAP_SEC = 3.0
+TEXT_UI_EVERY_SEC = 5.0  # on menu-type screens (home screen, other apps, CODM menus): catch Shortcuts quickly
 TEXT_EVENT_EVERY_SEC = 120.0  # one text alert per kind per player at most every 2 min
 SCENE_SETTLE_SEC = 60.0  # no "scene changed" while the player is still setting the camera up
 CLIP_FLUSH_SEC = 3.0  # fragments are written at each keyframe (every 2 s)
@@ -361,7 +362,10 @@ class SessionWatcher:
         if not self.text or r.corners is None or self.text_task is not None or self.text.busy():
             return
         suspicious = pred is not None and pred.score >= TEXT_SUSPICIOUS
-        if now - self.last_text_at < (TEXT_MIN_GAP_SEC if suspicious else self.cfg.text_every_sec):
+        ui_screen = pred is not None and pred.top == "codm_menu_ui"  # the model's "not gameplay" screens
+        gap = TEXT_MIN_GAP_SEC if suspicious else min(TEXT_UI_EVERY_SEC, self.cfg.text_every_sec) if ui_screen \
+            else self.cfg.text_every_sec
+        if now - self.last_text_at < gap:
             return
         self.last_text_at = now
         self.text_task = asyncio.create_task(self._read_text(bgr, r.corners.copy()))

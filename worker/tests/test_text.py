@@ -63,3 +63,25 @@ def test_reader_reads_a_rendered_menu():
     found = t.classify(texts)
     assert [f.type for f in found] == [t.CHEAT_TEXT], texts
     assert len(found[0].words) >= 2
+
+
+def test_cheat_brands_as_whole_words():
+    for text in ["R6X9 : CODM", "VANTA", "Vanta Private", "RCCX9 v2", "EngineOwning"]:
+        assert types([text]) == [t.CHEAT_TEXT], text
+    assert types(["Team advantage", "Advantage"]) == []  # "vanta" inside a normal word
+
+
+def test_config_cheat_words():
+    for text in ["HEAD_VIP_99_PRO_MAX", "Aim Engine: ON", "Headshot Config", "Regedit"]:
+        assert types([text]) == [t.CHEAT_TEXT], text
+
+
+def test_shortcuts_app_in_use_but_not_its_home_screen_icon():
+    home = ["Photos", "Camera", "Shortcuts", "Settings", "Call of Duty"]
+    assert types(home) == []
+    app = ["Shortcuts", "All Shortcuts", "HEAD 99", "Sensi Boost", "Automation", "Gallery"]
+    f = t.classify(app)
+    assert [x.type for x in f][-1] == t.SHORTCUTS
+    shortcut = [x for x in f if x.type == t.SHORTCUTS][0]
+    assert "Sensi Boost" in shortcut.words  # admins see what was on screen
+    assert types(["SHORTCUTS", "Running your automation"]) == [t.SHORTCUTS]

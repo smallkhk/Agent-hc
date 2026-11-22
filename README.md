@@ -80,8 +80,9 @@ The vision worker checks every live cam twice a second and posts to the alert ch
 | Feed looped / replayed (pre-recorded video) | violation when 20 consecutive samples (10 s) repeat an earlier part of the last 10 min |
 | Camera scene changed (possible device swap) | warning |
 | Mod menu / ESP / unknown overlay on screen | needs a trained model, see [training/README.md](training/README.md). Starts in shadow mode: logged, no alert, until `MENU_SHADOW=false` |
-| Cheat words on screen (Aimbot, ESP Box, Hit Magic, No Recoil, Key remaining, GameGuardian, a cheat watermark such as "CLOUD"…; list in `worker/detect/text.py`) | violation, read with offline OCR every `TEXT_EVERY_SEC` (10 s), with the words in the alert |
+| Cheat words on screen (Aimbot, ESP Box, Hit Magic, No Recoil, Key remaining, GameGuardian, config words like "HEAD VIP" / "Aim Engine", cheat brands like R6X9 / Vanta or a "CLOUD" watermark…; list in `worker/detect/text.py`) | violation, read with offline OCR every `TEXT_EVERY_SEC` (10 s), with the words in the alert |
 | A sideloading or modding app on screen (TestFlight, ESign, GBox, AltStore, Lucky Patcher, Parallel Space…), or two Call of Duty apps | warning (possible sideloaded or modded build) |
+| The iOS Shortcuts app in use (its screens, or a "Running your automation" banner; not just its icon) | warning, "possible config cheat", listing the text on screen so admins see which shortcut it was |
 
 **AI second opinion (optional, off by default):** with `LLM_SECOND_OPINION=true`, each hack-menu flag also sends the
 flattened screen to Gemini (`LLM_MODEL`, default `gemini-3.5-flash-lite`; free-tier key from aistudio.google.com in

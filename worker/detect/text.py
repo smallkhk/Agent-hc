@@ -2,7 +2,8 @@
 
 Cheat menus and loaders write words no CODM screen has (Aimbot, ESP Box, Hit Magic, Key remaining,
 a cheat's brand watermark such as a standalone "CLOUD"), and modded builds come through sideloading or
-modding apps (TestFlight, ESign, GBox, Lucky Patcher, ...) or show as a second Call of Duty app.
+modding apps (TestFlight, ESign, GBox, Lucky Patcher, ...) or show as a second Call of Duty app;
+"config" cheats run from the iOS Shortcuts app, so the Shortcuts app in use is reported too.
 Reading takes ~1-2 s on one CPU core, so the session reads a screen every few seconds, and only one
 read runs at a time on the whole worker.
 """
@@ -21,6 +22,7 @@ log = logging.getLogger("worker.text")
 CHEAT_TEXT = "cheat_text"
 SIDELOAD_APP = "sideload_app"
 DUPLICATE_CODM = "duplicate_codm"
+SHORTCUTS = "shortcuts_app"
 
 # Matched against each text item lowercased with spaces and punctuation removed ("Enable AimBot" → "enableaimbot").
 # Left out on purpose because CODM itself uses them: "aim assist", "auto fire", "fov" on its own, "recoil",
@@ -43,15 +45,27 @@ CHEAT_WORDS = [
     # loaders, keys, menus
     "injector", "injected", "injectsuccess", "keyremaining", "enterkey", "keyexpired", "licensekey", "activationkey",
     "keysystem", "vipkey", "antiban", "antireport", "anticheatbypass", "modmenu", "cheatmenu", "hackmenu",
+    # "config" cheats (iOS Shortcuts / config files that change aim or input): e.g. "HEAD_VIP_99", "Aim Engine"
+    "headvip", "viphead", "headshotconfig", "aimconfig", "aimbotconfig", "vipconfig", "configvip", "aimengine",
+    "headtrick", "aimtrick", "regedit",
     # cheat tools
     "gameguardian",
 ]
 # Brand watermarks: only as the whole text item, so CODM's own "Cloud Sensitivity Management" never matches.
 CHEAT_BRANDS = {"cloud", "cloudengine"}
+# Cheat brand names, matched as whole words ("vanta" hides inside "advantage"). Ordinary words that some cheat
+# sellers use as names (e.g. "Suave") are left out: they would flag honest text.
+BRAND_WORDS = {"r6x9", "rccx9", "vanta", "engineowning", "gcaimx"}
 # Sideloading / modding apps: a modded build is installed or run through these (warning, not proof).
 SIDELOAD_WORDS = ["testflight", "altstore", "trollstore", "sideloadly", "ksign", "gbox", "appdb",
                   "luckypatcher", "parallelspace", "virtualspace", "vmos", "magisk", "lsposed", "xposed"]
-SIDELOAD_LABELS = {"esign", "scarlet", "feather"}  # only as a whole app label ("esign" hides in "design")
+SIDELOAD_LABELS = {"esign", "scarlet", "feather"}
+# The Shortcuts app open (its own screens) or running something ("Running your automation" banner). Its icon on
+# the home screen alone does not count: every iPhone has it.
+SHORTCUTS_UI = ["allshortcuts", "myshortcuts", "shortcutsgallery", "newautomation", "personalautomation",
+                "createpersonalautomation", "addaction", "searchactions", "searchforappsandactions", "runshortcut",
+                "runningyourautomation", "runningyourshortcut", "runningautomation", "runimmediately"]
+SHORTCUTS_TABS = {"automation", "gallery"}  # with a "Shortcuts" title on the same screen  # only as a whole app label ("esign" hides in "design")
 CODM_APP = re.compile(r"callofduty|codmobile|^codm$")
 MIN_CONFIDENCE = 0.6
 
@@ -62,7 +76,7 @@ def _norm(text: str) -> str:
 
 @dataclass(frozen=True)
 class Finding:
-    type: str  # CHEAT_TEXT | SIDELOAD_APP | DUPLICATE_CODM
+    type: str  # CHEAT_TEXT | SIDELOAD_APP | DUPLICATE_CODM | SHORTCUTS
     words: tuple[str, ...]  # what was read, as shown to admins
 
     def detail(self) -> str:
@@ -73,11 +87,16 @@ def classify(texts: list[str]) -> list[Finding]:
     cheat: list[str] = []
     sideload: list[str] = []
     codm_apps: list[str] = []
+    norms = {_norm(x) for x in texts}
+    shortcuts = any(any(w in n for w in SHORTCUTS_UI) for n in norms) or (
+        "shortcuts" in norms and bool(norms & SHORTCUTS_TABS))
     for text in texts:
         n = _norm(text)
         if not n:
             continue
-        if any(w in n for w in CHEAT_WORDS) or n in CHEAT_BRANDS or (n == "esp" and text.strip().isupper()):
+        words = {w.lower() for w in re.findall(r"[A-Za-z0-9]+", text)}
+        if (any(w in n for w in CHEAT_WORDS) or n in CHEAT_BRANDS or words & BRAND_WORDS
+                or (n == "esp" and text.strip().isupper())):
             cheat.append(text.strip())
         if any(w in n for w in SIDELOAD_WORDS) or n in SIDELOAD_LABELS:
             sideload.append(text.strip())
@@ -90,6 +109,8 @@ def classify(texts: list[str]) -> list[Finding]:
         findings.append(Finding(SIDELOAD_APP, tuple(dict.fromkeys(sideload))))
     if len(codm_apps) >= 2:  # two app labels: a second (cloned or modded) CODM install
         findings.append(Finding(DUPLICATE_CODM, tuple(codm_apps)))
+    if shortcuts:  # everything readable, so admins see which shortcut was opened or run
+        findings.append(Finding(SHORTCUTS, tuple(dict.fromkeys(x.strip() for x in texts if x.strip()))))
     return findings
 
 

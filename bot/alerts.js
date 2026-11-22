@@ -40,6 +40,7 @@ export const RULE_TEXT = {
   unknown_overlay: 'Unknown overlay on screen',
   cheat_text: 'Cheat text on screen',
   sideload_app: 'Sideloading / modding app on screen',
+  shortcuts_app: 'iOS Shortcuts in use (possible config cheat)',
   duplicate_codm: 'Two CODM apps on screen',
 };
 
